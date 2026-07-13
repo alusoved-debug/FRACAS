@@ -1,0 +1,3307 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FRACAS Dashboard – IAI / AS9100</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    /* ── Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --card:     #1c2230;
+      --border:   #30363d;
+      --accent:   #1f6feb;
+      --accent2:  #238636;
+      --warn:     #d29922;
+      --danger:   #da3633;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   10px;
+    }
+
+    html { font-size: 15px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Scrollbar ────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Header ───────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #0d1b2a 0%, #1a2744 60%, #0d1b2a 100%);
+      border-bottom: 2px solid var(--accent);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--accent), #58a6ff);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .header h1 span { color: #58a6ff; }
+    .header-sub { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+    .mode-badges {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .badge-strict  { background: #3b1a1a; color: #ff7b72; border: 1px solid #da3633; }
+    .badge-enter   { background: #1a2d1a; color: #7ee787; border: 1px solid #238636; }
+    .badge-as9100  { background: #1a2744; color: #79c0ff; border: 1px solid var(--accent); }
+
+    /* ── Nav ──────────────────────────────────────────────── */
+    .nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+    }
+    .nav-btn {
+      background: none; border: none; color: var(--muted);
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+    /* ── Layout ───────────────────────────────────────────── */
+    .container { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Section title ────────────────────────────────────── */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── KPI Cards ────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 4px; height: 100%;
+      background: var(--accent);
+    }
+    .kpi-card.warn::before  { background: var(--warn); }
+    .kpi-card.danger::before { background: var(--danger); }
+    .kpi-card.success::before { background: var(--accent2); }
+    .kpi-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: #fff; line-height: 1; }
+    .kpi-value.small { font-size: 1.3rem; }
+    .kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
+
+    /* ── Step cards (workflow) ────────────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: border-color .2s, transform .15s;
+      cursor: default;
+    }
+    .step-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .step-num {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #388bfd);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem;
+      flex-shrink: 0;
+      color: #fff;
+    }
+    .step-title { font-weight: 700; font-size: 0.95rem; color: #fff; }
+    .step-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
+    .step-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #1f2d44;
+      color: #79c0ff;
+      border: 1px solid #1f6feb55;
+    }
+    .tag.green { background: #1a2d1a; color: #7ee787; border-color: #23863655; }
+    .tag.orange { background: #2d1e0a; color: #ffa657; border-color: #d2992255; }
+    .tag.red    { background: #2d1117; color: #ff7b72; border-color: #da363355; }
+
+    /* ── Two-column grid ──────────────────────────────────── */
+    .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .col3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 900px) {
+      .col2, .col3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel (generic) ──────────────────────────────────── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .panel-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 14px;
+    }
+
+    /* ── Table ────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .data-table th {
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 600;
+      padding: 8px 12px;
+      text-align: right;
+      border: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+    .data-table tr:hover td { background: #1f2a3a; }
+    .required-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--danger);
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+    .optional-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* ── Notification type badges ─────────────────────────── */
+    .notif-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .notif-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .notif-code {
+      font-size: 1.3rem;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 8px;
+      min-width: 52px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .notif-zp { background: #1a2744; color: #79c0ff; }
+    .notif-zv { background: #2d1e0a; color: #ffa657; }
+    .notif-zc { background: #1a2d1a; color: #7ee787; }
+    .notif-zm { background: #2d1117; color: #ff7b72; }
+    .notif-zq { background: #1f1a2d; color: #d2a8ff; }
+    .notif-zr { background: #1a2a2a; color: #56d364; }
+    .notif-name  { font-weight: 700; font-size: 0.9rem; margin-bottom: 3px; }
+    .notif-sub   { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── 5M grid ──────────────────────────────────────────── */
+    .m5-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .m5-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .m5-letter {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .m5-title { font-weight: 700; font-size: 0.92rem; margin-bottom: 8px; }
+    .m5-list { list-style: none; padding: 0; }
+    .m5-list li {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 2px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .m5-list li:last-child { border-bottom: none; }
+    .m5-list li::before { content: '• '; color: var(--accent); }
+
+    /* ── Rules list ───────────────────────────────────────── */
+    .rules-list { list-style: none; }
+    .rules-list li {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.83rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+    .rules-list li:last-child { border-bottom: none; }
+    .rule-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .rule-num.warn { background: var(--warn); color: #000; }
+    .rule-num.danger { background: var(--danger); }
+
+    /* ── Chart containers ─────────────────────────────────── */
+    .chart-box { position: relative; height: 260px; }
+    .chart-box-sm { position: relative; height: 200px; }
+
+    /* ── Risk badges ──────────────────────────────────────── */
+    .risk-high   { color: #ff7b72; font-weight: 700; }
+    .risk-medium { color: #ffa657; font-weight: 700; }
+    .risk-low    { color: #7ee787; font-weight: 700; }
+
+    /* ── Priority arrow ───────────────────────────────────── */
+    .exec-flow {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .flow-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+    /* ── Chained issues ───────────────────────────────────── */
+    .chain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .chain-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+    .chain-cards-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .chain-eq { font-size: 1rem; color: var(--warn); font-weight: 700; }
+
+    /* ── Scrollable table wrapper ─────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+
+    /* ── Confidence badges ────────────────────────────────── */
+    .conf-high    { background: #1a2d1a; color: #7ee787; border-color: #23863655; }
+    .conf-medium  { background: #2d2a12; color: #e3b341; border-color: #d2992255; }
+    .conf-low     { background: #2d1e0a; color: #ffa657; border-color: #da363355; }
+    .conf-unknown { background: #1f1f1f; color: var(--muted); border-color: #30363d; }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    /* ── Fade-in animation ─────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeUp .45s ease both; }
+    .fade-in-1 { animation-delay: .05s; }
+    .fade-in-2 { animation-delay: .12s; }
+    .fade-in-3 { animation-delay: .19s; }
+    .fade-in-4 { animation-delay: .26s; }
+    .fade-in-5 { animation-delay: .33s; }
+    .fade-in-6 { animation-delay: .40s; }
+
+    /* ── Animated KPI counter ──────────────────────────────── */
+    .kpi-value[data-target] { transition: color .3s; }
+
+    /* ── Filter bar ────────────────────────────────────────── */
+    .filter-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .filter-select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 0.83rem;
+      min-width: 140px;
+      cursor: pointer;
+      outline: none;
+      direction: rtl;
+    }
+    .filter-select:focus { border-color: var(--accent); }
+    .filter-checkboxes { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filter-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: all .15s;
+      background: var(--card);
+      color: var(--muted);
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--text); }
+    .filter-chip.active { background: #1f2d44; color: #79c0ff; border-color: var(--accent); }
+    .filter-chip.zp.active { background: #1a2744; color: #79c0ff; border-color: #388bfd; }
+    .filter-chip.zv.active { background: #2d1e0a; color: #ffa657; border-color: #d29922; }
+    .filter-chip.zc.active { background: #1a2d1a; color: #7ee787; border-color: #238636; }
+    .filter-chip.zm.active { background: #2d1117; color: #ff7b72; border-color: #da3633; }
+    .filter-chip.zq.active { background: #1f1a2d; color: #d2a8ff; border-color: #6e40c9; }
+    .filter-chip.zr.active { background: #1a2a2a; color: #56d364; border-color: #1a7048; }
+    .btn-reset {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all .15s;
+      align-self: flex-end;
+    }
+    .btn-reset:hover { border-color: var(--danger); color: #ff7b72; }
+
+    /* ── Filtered KPI strip ────────────────────────────────── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .kpi-strip-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .kpi-strip-card .kv { font-size: 1.7rem; font-weight: 700; color: #fff; }
+    .kpi-strip-card .kl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .kpi-strip-card.danger { border-color: #da363360; }
+    .kpi-strip-card.warn   { border-color: #d2992260; }
+    .kpi-strip-card.success { border-color: #23863660; }
+
+    /* ── Hot spot badge on Pareto ──────────────────────────── */
+    .hot-badge {
+      display: inline-block;
+      background: #d2992233;
+      color: #ffa657;
+      border: 1px solid #d2992255;
+      border-radius: 10px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    /* ── Supplier ranking table ────────────────────────────── */
+    .rank-bar-wrap { width: 100%; background: var(--surface); border-radius: 4px; height: 8px; overflow: hidden; }
+    .rank-bar { height: 100%; border-radius: 4px; transition: width .8s ease; }
+
+    /* ── Wizard layout ───────────────────────────────────────── */
+    .wizard-layout {
+      display: flex;
+      height: calc(100vh - 108px);
+      overflow: hidden;
+    }
+    .wizard-sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .wizard-data-bar {
+      padding: 10px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      font-size: .78rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .wdb-dot { width:8px;height:8px;border-radius:50%;background:var(--accent2);flex-shrink:0; }
+    .wdb-dot.demo { background:var(--warn); }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .step-item:hover { background: #1c2432; }
+    .step-item.active { background: #1f2d44; border-right: 3px solid var(--accent); }
+    .step-item.done   { border-right: 3px solid var(--accent2); }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .78rem; flex-shrink: 0;
+      background: var(--card); color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .step-item.active .step-circle { background: var(--accent); color:#fff; border-color:var(--accent); }
+    .step-item.done   .step-circle { background: var(--accent2); color:#fff; border-color:var(--accent2); }
+    .step-info { flex:1; min-width:0; }
+    .step-name { font-size:.82rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .step-status { font-size:.68rem; color:var(--muted); margin-top:1px; }
+    .step-item.done .step-status { color: var(--accent2); }
+
+    .wizard-content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+
+    /* Welcome screen */
+    .wiz-welcome {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; padding: 40px; text-align: center;
+    }
+    .wiz-welcome-icon { font-size: 4rem; margin-bottom: 16px; }
+    .wiz-welcome h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .wiz-welcome p { color: var(--muted); font-size: .9rem; max-width: 480px; line-height: 1.6; }
+
+    /* Step result area */
+    .step-result { padding: 24px 28px; }
+    .result-header {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    }
+    .result-step-num {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink:0;
+      background: linear-gradient(135deg, var(--accent), #58a6ff);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 900; color: #fff;
+    }
+    .result-title { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .result-sub   { font-size: .8rem;  color: var(--muted); margin-top: 3px; }
+
+    .result-block {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px; margin-bottom: 16px;
+    }
+    .result-block-title {
+      font-size: .85rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .insight-box {
+      background: #1a2744; border: 1px solid #1f6feb55;
+      border-radius: 8px; padding: 12px 16px; margin-top: 14px;
+      font-size: .83rem; color: #79c0ff; line-height: 1.6;
+    }
+    .insight-box strong { color: #fff; }
+
+    /* Step-3 choice cards */
+    .choice-grid { display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
+    .choice-card {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 10px; padding: 18px 22px; cursor: pointer;
+      transition: all .15s; text-align:center; min-width:130px;
+    }
+    .choice-card:hover { border-color: var(--accent); background: #1f2d44; }
+    .choice-letter { font-size: 1.8rem; font-weight: 900; color: var(--accent); }
+    .choice-label  { font-size: .82rem; color: var(--text); margin-top: 4px; }
+
+    /* Inline chart in results */
+    .result-chart-box { position:relative; height:240px; margin-top:10px; }
+
+    /* Run button in sidebar */
+    .btn-step-run {
+      background: var(--accent); border: none; border-radius: 6px;
+      color: #fff; padding: 4px 12px; font-size: .72rem; font-weight: 700;
+      cursor: pointer; transition: background .15s; white-space: nowrap; flex-shrink:0;
+    }
+    .btn-step-run:hover { background: #388bfd; }
+
+    /* Status dot next step hint */
+    .next-hint {
+      background: var(--surface); border: 1px dashed var(--border);
+      border-radius: 8px; padding: 10px 14px; margin-top: 14px;
+      font-size: .8rem; color: var(--muted); display:flex; align-items:center; gap:8px;
+    }
+
+    /* Upload tab ──────────────────────────────────────────── */
+    .upload-mode-toggle {
+      display: flex; gap: 0; margin-bottom: 20px;
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; width: fit-content;
+    }
+    .umode-btn {
+      background: var(--card); border: none; color: var(--muted);
+      padding: 9px 22px; font-size: .85rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .umode-btn.active { background: var(--accent); color: #fff; }
+    .umode-btn:not(.active):hover { background: var(--surface); color: var(--text); }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 50px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      background: var(--card);
+      margin-bottom: 20px;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: #1f2d44;
+    }
+    .upload-zone input[type=file] { display: none; }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .upload-sub { font-size: .82rem; color: var(--muted); }
+    .upload-formats {
+      display: flex; justify-content: center; gap: 8px; margin-top: 14px;
+    }
+
+    .paste-area {
+      width: 100%;
+      min-height: 180px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Segoe UI', monospace, sans-serif;
+      font-size: .82rem;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+      direction: ltr;
+      margin-bottom: 12px;
+      transition: border-color .2s;
+    }
+    .paste-area:focus { border-color: var(--accent); }
+
+    .btn-parse {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      font-size: .88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-parse:hover { background: #388bfd; }
+    .btn-run {
+      background: var(--accent2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 28px;
+      font-size: .92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: 16px;
+    }
+    .btn-run:hover { background: #2ea043; }
+    .btn-run:disabled { background: var(--border); cursor: not-allowed; }
+
+    .upload-status {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: .83rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .upload-status.ok    { background: #1a2d1a; color: #7ee787; border: 1px solid #23863660; display:block; }
+    .upload-status.err   { background: #2d1117; color: #ff7b72; border: 1px solid #da363360; display:block; }
+    .upload-status.warn  { background: #2d1e0a; color: #ffa657; border: 1px solid #d2992260; display:block; }
+    .upload-status.info  { background: #1a2744; color: #79c0ff; border: 1px solid #1f6feb60; display:block; }
+
+    .mapping-section { margin-top: 20px; display: none; }
+    .mapping-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+      margin-bottom: 16px;
+    }
+    .mapping-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .mapping-row.required { border-color: #1f6feb55; }
+    .mapping-row.required .mfield { color: #79c0ff; }
+    .mfield { font-size: .78rem; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+    .mapping-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: .8rem;
+      outline: none;
+      width: 100%;
+      direction: rtl;
+      cursor: pointer;
+    }
+    .mapping-select:focus { border-color: var(--accent); }
+    .mapping-select.matched { border-color: #23863680; background: #1a2d1a; }
+
+    .preview-section { margin-top: 20px; display: none; }
+    .preview-info { font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+
+    .data-source-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #1a2d1a; color: #7ee787;
+      border: 1px solid #23863660;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: .75rem; font-weight: 700;
+      margin-right: 10px;
+    }
+    .data-source-badge.demo {
+      background: #1a2744; color: #79c0ff; border-color: #1f6feb60;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon">✈</div>
+    <div>
+      <h1><span>FRACAS</span> Dashboard</h1>
+      <div class="header-sub">Failure Reporting, Analysis and Corrective Action System &nbsp;|&nbsp; IAI / AS9100 &nbsp;|&nbsp; Supplier Quality Management</div>
+    </div>
+  </div>
+  <div class="mode-badges">
+    <span class="badge badge-strict">STRICT MODE</span>
+    <span class="badge badge-enter">ENTERPRISE MODE</span>
+    <span class="badge badge-as9100">AS9100</span>
+  </div>
+</header>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav class="nav">
+  <button class="nav-btn" data-tab="upload" style="color:#7ee787;">📤 העלאת נתונים</button>
+  <button class="nav-btn active" data-tab="wizard" style="color:#ffa657;">🔬 ניתוח FRACAS</button>
+  <button class="nav-btn" data-tab="charts">📊 גרפים</button>
+  <button class="nav-btn" data-tab="overview">מדריך</button>
+  <button class="nav-btn" data-tab="workflow">תהליך עבודה</button>
+  <button class="nav-btn" data-tab="input">מבנה קלט</button>
+  <button class="nav-btn" data-tab="rca">RCA – 5M</button>
+  <button class="nav-btn" data-tab="rules">כללי חובה</button>
+  <button class="nav-btn" data-tab="reports">דוחות</button>
+</nav>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main>
+
+<!-- ─────────── TAB: UPLOAD ─────────── -->
+<div class="tab-pane" id="tab-upload">
+<div class="container">
+
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;">
+    <h2 class="section-title" style="margin-bottom:0;flex:1;">📤 העלאת נתוני FRACAS</h2>
+    <span id="dataSourceBadge" class="data-source-badge">📊 AI_unclassified.xlsx (72 שורות)</span>
+  </div>
+
+  <!-- Mode toggle: file vs paste -->
+  <div class="upload-mode-toggle">
+    <button class="umode-btn active" id="umodeFile">📁 קובץ (CSV / Excel)</button>
+    <button class="umode-btn" id="umodePaste">📋 הדבקת טבלה</button>
+  </div>
+
+  <!-- File upload zone -->
+  <div id="fileSection">
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt" />
+      <div class="upload-icon">📂</div>
+      <div class="upload-title">גרור קובץ לכאן, או לחץ לבחירה</div>
+      <div class="upload-sub">קבצים נתמכים: Excel (.xlsx, .xls) · CSV · TXT מופרד בטאב</div>
+      <div class="upload-formats">
+        <span class="tag green">XLSX</span>
+        <span class="tag green">XLS</span>
+        <span class="tag">CSV</span>
+        <span class="tag">TXT</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paste zone -->
+  <div id="pasteSection" style="display:none;">
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:8px;">
+      העתק טבלה מ-Excel (Ctrl+C) והדבק כאן. השורה הראשונה חייבת להיות כותרות עמודות.
+    </p>
+    <textarea class="paste-area" id="pasteArea" placeholder="הדבק כאן את הנתונים (Tab-separated או CSV)...&#10;&#10;לדוגמה:&#10;מספר הודעה&#9;תאריך פתיחה&#9;פרויקט&#9;סוג הודעה&#9;תיאור חומר&#9;...&#10;100000001&#9;01/01/2026&#9;הדס&#9;ZP&#9;GENERAL ASSEMBLY&#9;..."></textarea>
+    <button class="btn-parse" id="btnParse">🔍 נתח נתונים</button>
+  </div>
+
+  <!-- Status messages -->
+  <div class="upload-status" id="uploadStatus"></div>
+
+  <!-- Column Mapping -->
+  <div class="mapping-section" id="mappingSection">
+    <h3 class="section-title">🗂️ מיפוי עמודות</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:4px;">
+      המערכת זיהתה את העמודות הבאות. ודא שהמיפוי נכון לפני הפעלת הניתוח.
+      <span style="color:#7ee787;">✅ זוהה אוטומטית</span> &nbsp;
+      <span style="color:var(--muted);">— לא זוהה</span>
+    </p>
+    <div class="mapping-grid" id="mappingGrid"></div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <button class="btn-run" id="btnRun">▶ הפעל ניתוח FRACAS</button>
+      <span style="font-size:.8rem;color:var(--muted);" id="mappingStatus"></span>
+    </div>
+  </div>
+
+  <!-- Preview Table -->
+  <div class="preview-section" id="previewSection">
+    <h3 class="section-title" style="margin-top:20px;">👁 תצוגה מקדימה – 10 שורות ראשונות</h3>
+    <div class="preview-info" id="previewInfo"></div>
+    <div class="table-wrap">
+      <table class="data-table" id="previewTable">
+        <thead id="previewHead"></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: WIZARD ─────────── -->
+<div class="tab-pane active" id="tab-wizard">
+  <div class="wizard-layout">
+
+    <!-- Sidebar -->
+    <aside class="wizard-sidebar" id="wizSidebar">
+      <div class="wizard-data-bar" id="wizDataBar">
+        <div class="wdb-dot demo" id="wizDot"></div>
+        <span id="wizDataLabel">נתוני דמו (100 שורות)</span>
+      </div>
+      <!-- Step items injected by JS -->
+    </aside>
+
+    <!-- Main content -->
+    <section class="wizard-content" id="wizContent">
+      <div class="wiz-welcome" id="wizWelcome">
+        <div class="wiz-welcome-icon">🔬</div>
+        <h2>ניתוח FRACAS שלב אחר שלב</h2>
+        <p>
+          בחר שלב מהרשימה משמאל כדי להפעיל את הניתוח.<br/>
+          המערכת תחשב ותציג את התוצאות כאן.<br/><br/>
+          <span style="color:#ffa657;">⚠ להעלאת נתונים אמיתיים עבור ל-"📤 העלאת נתונים"</span>
+        </p>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ─────────── TAB: OVERVIEW ─────────── -->
+<div class="tab-pane" id="tab-overview">
+<div class="container">
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">שלבי עבודה</div>
+      <div class="kpi-value">10</div>
+      <div class="kpi-sub">מ-Data Validation עד Executive Summary</div>
+    </div>
+    <div class="kpi-card warn">
+      <div class="kpi-label">סוגי הודעה</div>
+      <div class="kpi-value">6</div>
+      <div class="kpi-sub">ZP / ZV / ZC / ZM / ZQ / ZR</div>
+    </div>
+    <div class="kpi-card success">
+      <div class="kpi-label">שיטות RCA</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-sub">5WHY · Fishbone · Fault Tree</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-label">קטגוריות 5M</div>
+      <div class="kpi-value">6</div>
+      <div class="kpi-sub">Man · Machine · Material · Method · Measurement · Design</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">סוגי דוחות</div>
+      <div class="kpi-value small">8D · SCAR · NCR · MRB · 8D · רוחבי · בודדת</div>
+      <div class="kpi-sub">פורמט Aviation A4</div>
+    </div>
+    <div class="kpi-card warn">
+      <div class="kpi-label">Hot Spot סף</div>
+      <div class="kpi-value">10%</div>
+      <div class="kpi-sub">או ≥ 3 תקלות</div>
+    </div>
+    <div class="kpi-card danger">
+      <div class="kpi-label">SCAR נדרש כאשר</div>
+      <div class="kpi-value">≥ 2</div>
+      <div class="kpi-sub">תקלות ספק, או Supplier Risk = HIGH</div>
+    </div>
+    <div class="kpi-card success">
+      <div class="kpi-label">Supplier Risk HIGH</div>
+      <div class="kpi-value">≥ 3</div>
+      <div class="kpi-sub">תקלות לספק; MEDIUM = 2; LOW = 1</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">🏷️ סוגי הודעות</h2>
+  <div class="notif-grid" style="margin-bottom:28px;">
+    <div class="notif-card">
+      <div class="notif-code notif-zp">ZP</div>
+      <div><div class="notif-name">תקלת ייצור</div><div class="notif-sub">Production – תקלות שנתגלו בתהליך הייצור</div></div>
+    </div>
+    <div class="notif-card">
+      <div class="notif-code notif-zv">ZV</div>
+      <div><div class="notif-name">תקלת ספק</div><div class="notif-sub">Vendor – תקלות הנובעות מספק; מחייב שדות ספק נוספים</div></div>
+    </div>
+    <div class="notif-card">
+      <div class="notif-code notif-zc">ZC</div>
+      <div><div class="notif-name">תקלת לקוח</div><div class="notif-sub">Customer – תקלות שדווחו ע"י הלקוח</div></div>
+    </div>
+    <div class="notif-card">
+      <div class="notif-code notif-zm">ZM</div>
+      <div><div class="notif-name">ועדת סקר</div><div class="notif-sub">MRB – Material Review Board</div></div>
+    </div>
+    <div class="notif-card">
+      <div class="notif-code notif-zq">ZQ</div>
+      <div><div class="notif-name">פעילות מונעת</div><div class="notif-sub">Quality – פעולות מניעה ושיפור איכות</div></div>
+    </div>
+    <div class="notif-card">
+      <div class="notif-code notif-zr">ZR</div>
+      <div><div class="notif-name">תיקון במפעל</div><div class="notif-sub">Repair – תקלת ייצור שתוקנה בתוך המפעל</div></div>
+    </div>
+  </div>
+
+  <div class="col2">
+    <div class="panel">
+      <div class="panel-title">סדר הרצה – Execution Priority</div>
+      <div class="exec-flow">
+        <span class="flow-step">Validation</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">Normalization</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">Deduplication</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">Analysis</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">RCA</span>
+        <span class="flow-arrow">←</span>
+        <span class="flow-step">Executive Summary</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">תקלות משורשרות – Chained Issues</div>
+      <div class="chain-grid">
+        <div class="chain-card">
+          ZP + ZV <span class="chain-eq">=</span> תקלה אחת
+        </div>
+        <div class="chain-card">
+          ZP + ZM <span class="chain-eq">=</span> תקלה אחת
+        </div>
+        <div class="chain-card">
+          ZV + ZM <span class="chain-eq">=</span> תקלה אחת
+        </div>
+        <div class="chain-card">
+          ZP + ZV + ZM <span class="chain-eq">=</span> תקלה אחת
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">📦 ניתוחים זמינים – Enterprise</h2>
+  <div class="col3">
+    <div class="panel">
+      <div class="panel-title">Supplier Analysis</div>
+      <ul class="rules-list">
+        <li><span class="rule-num">1</span> Supplier Defect Count</li>
+        <li><span class="rule-num">2</span> Supplier Defect Percent</li>
+        <li><span class="rule-num">3</span> Supplier Risk Score (HIGH/MEDIUM/LOW)</li>
+        <li><span class="rule-num">4</span> SCAR Recommendation</li>
+        <li><span class="rule-num">5</span> אשמת ספק vs. לא אשמת ספק</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">KPI Analysis</div>
+      <ul class="rules-list">
+        <li><span class="rule-num green" style="background:var(--accent2)">1</span> Supplier Defect Rate</li>
+        <li><span class="rule-num green" style="background:var(--accent2)">2</span> Top Supplier</li>
+        <li><span class="rule-num green" style="background:var(--accent2)">3</span> Top Failure Category</li>
+        <li><span class="rule-num green" style="background:var(--accent2)">4</span> Top Department</li>
+        <li><span class="rule-num green" style="background:var(--accent2)">5</span> Quality Risk Index</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Hot Spot Detection</div>
+      <ul class="rules-list">
+        <li><span class="rule-num warn">✦</span> ≥ 10% מסך התקלות</li>
+        <li><span class="rule-num warn">✦</span> או ≥ 3 תקלות לאותה קטגוריה</li>
+        <li><span class="rule-num">📊</span> Pareto לפי תיאור חומר</li>
+        <li><span class="rule-num">📊</span> Pareto לפי ספק</li>
+        <li><span class="rule-num">📊</span> Pareto לפי מחלקה</li>
+        <li><span class="rule-num">📊</span> Pareto לפי סוג תקלה</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: WORKFLOW ─────────── -->
+<div class="tab-pane" id="tab-workflow">
+<div class="container">
+
+  <h2 class="section-title">🔄 10 שלבי עבודה – Workflow</h2>
+  <div class="steps-grid">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">קבלת נתונים ואתחול</div>
+      </div>
+      <div class="step-desc">
+        קבלת קלט מהמשתמש (Excel/CSV/טבלה/טקסט). הצגת מה הסוכן יודע לעשות, ניתוח ראשוני: כמות שורות, שדות שהתקבלו, שדות חסרים. הצגת הנתונים בטבלה.
+      </div>
+      <div class="step-tags">
+        <span class="tag">הצגת מידע</span>
+        <span class="tag orange">שדות חסרים</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">איחוד כפולות – Deduplication</div>
+      </div>
+      <div class="step-desc">
+        איחוד תקלות כפולות למניעת ספירה כפולה. כפילות = תיאור חומר + סריאלי + תיאור הודעה + קוד פגם זהים. הצגת מספר תקלות לפני ואחרי.
+      </div>
+      <div class="step-tags">
+        <span class="tag green">חובה</span>
+        <span class="tag">COUNT DISTINCT</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">ניתוח Pareto – תיאור חומר</div>
+      </div>
+      <div class="step-desc">
+        ניתוח PARETO TOP10 לפי "תיאור חומר". גרף שכיחות בסדר יורד. ניתוח נפרד לכל פרויקט/ספק/מחלקה לפי בחירת המשתמש. אם קיים "תיאור רכיב בן" – ביצוע Pareto נוסף.
+      </div>
+      <div class="step-tags">
+        <span class="tag">TOP 10</span>
+        <span class="tag orange">לפי פרויקט</span>
+        <span class="tag">גרף</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-title">סיווג סוג הבעיה</div>
+      </div>
+      <div class="step-desc">
+        סיווג תקלות לפי "סוג הבעיה" מתוך "תיאור ההודעה". הסיווג לכל פרויקט בנפרד. השוואה לשדה "קוד הפגם" עם סימון ✅/❌.
+      </div>
+      <div class="step-tags">
+        <span class="tag">AS9100</span>
+        <span class="tag green">✅ / ❌ התאמה</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-title">ניתוח סוג הודעה</div>
+      </div>
+      <div class="step-desc">
+        ניתוח לפי ZP/ZM/ZV/ZC לפי דרישה ואישור המשתמש. זיהוי הודעות ZV אם: סוג הודעה מתחיל ב-ZV, או תיאור ספק ≠ "ללא ספק".
+      </div>
+      <div class="step-tags">
+        <span class="tag orange">ZV ספק</span>
+        <span class="tag">ZP ייצור</span>
+        <span class="tag red">ZM MRB</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div class="step-title">פעילות מתקנת שבוצעה</div>
+      </div>
+      <div class="step-desc">
+        הצגת הפעילות המתקנת מתוך שדה "פעילות" / "טקסט פעילות ארוך". להודעות ZV – שימוש גם בשדות "אימות תקלה (ספק)" ו"אימות פ"מ לסיבת שורש". הצגה בטבלה נפרדת.
+      </div>
+      <div class="step-tags">
+        <span class="tag">CAPA ביצוע</span>
+        <span class="tag orange">ZV נפרד</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div class="step-title">ניתוח סיבות שורש – RCA</div>
+      </div>
+      <div class="step-desc">
+        RCA לכל קטגוריה לפי 5WHY, Fishbone, Fault Tree. טבלת "סיבת שורש" מול שדה "סיבת פגם" + השוואה. טבלת שכיחות מסכמת לפי סיבת שורש. Confidence לכל RCA: High/Medium/Low/Unknown.
+      </div>
+      <div class="step-tags">
+        <span class="tag">5WHY</span>
+        <span class="tag">Fishbone</span>
+        <span class="tag green">Confidence</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">8</div>
+        <div class="step-title">הצעות CAPA</div>
+      </div>
+      <div class="step-desc">
+        הצעות לפעילות מתקנת/מונעת (CAPA) לפי סיבות השורש שאותרו בשלב 7. פעולות מתקנות ומניעה מפורטות.
+      </div>
+      <div class="step-tags">
+        <span class="tag green">Corrective</span>
+        <span class="tag">Preventive</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">9</div>
+        <div class="step-title">דוחות נלווים</div>
+      </div>
+      <div class="step-desc">
+        8D, דו"ח תקלה בודדת, דו"ח רוחבי, SCAR לספק, NCR פנימי, סיכום MRB. דו"ח NCR בפורמט Aviation A4 לפי AS9100 IAI Practice. לפי דרישת המשתמש.
+      </div>
+      <div class="step-tags">
+        <span class="tag">8D</span>
+        <span class="tag orange">SCAR</span>
+        <span class="tag red">NCR</span>
+        <span class="tag">MRB</span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">10</div>
+        <div class="step-title">Executive Summary</div>
+      </div>
+      <div class="step-desc">
+        דו"ח מסכם: בעיות עיקריות לפי פרויקט/מחלקה/ספק, Top Problems, Top Suppliers, Root Causes, Risk Level, Recommended Actions.
+      </div>
+      <div class="step-tags">
+        <span class="tag green">Top Problems</span>
+        <span class="tag">Risk Level</span>
+        <span class="tag">Actions</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: INPUT ─────────── -->
+<div class="tab-pane" id="tab-input">
+<div class="container">
+
+  <h2 class="section-title">📥 מבנה קלט – Input Schema</h2>
+  <p style="font-size:.83rem;color:var(--muted);margin-bottom:16px;">
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-left:12px;"><span class="required-dot"></span> שדה חובה</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;"><span class="optional-dot"></span> שדה אופציונלי</span>
+  </p>
+
+  <h3 style="font-size:.9rem;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">שדות כלליים (כלל ההודעות)</h3>
+  <div class="table-wrap" style="margin-bottom:24px;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>שם השדה</th>
+          <th>תיאור</th>
+          <th>דרישה</th>
+          <th>הערות</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>מספר הודעה</td><td>מספר ייחודי לכל הודעה (9 ספרות)</td><td><span class="required-dot"></span> חובה</td><td>COUNT DISTINCT לפי שדה זה</td></tr>
+        <tr><td>2</td><td>תאריך פתיחה</td><td>תאריך פתיחת ההודעה</td><td><span class="required-dot"></span> חובה</td><td>לחישוב מגמות ו-Trends</td></tr>
+        <tr><td>3</td><td>פרויקט / תיאור פרויקט</td><td>שם הפרויקט</td><td><span class="required-dot"></span> חובה</td><td>ניתוח נפרד לכל פרויקט</td></tr>
+        <tr><td>4</td><td>סוג הודעה</td><td>ZP / ZV / ZC / ZM / ZQ / ZR</td><td><span class="required-dot"></span> חובה</td><td>Normalize לשני תווים ראשונים</td></tr>
+        <tr><td>5</td><td>שלב גילוי הפגם</td><td>שלב בו נתגלה הפגם</td><td><span class="required-dot"></span> חובה</td><td>מפעל / ספק / לקוח</td></tr>
+        <tr><td>6</td><td>תיאור חומר</td><td>תיאור החומר/פריט הפגום</td><td><span class="required-dot"></span> חובה</td><td>בסיס ל-Pareto הראשי</td></tr>
+        <tr><td>7</td><td>סריאלי</td><td>מספר סידורי של החומר/פריט</td><td><span class="required-dot"></span> חובה</td><td>לזיהוי כפילויות</td></tr>
+        <tr><td>8</td><td>תיאור רכיב בן</td><td>תיאור רכיב בן (Sub-Component)</td><td><span class="optional-dot"></span> אופציונלי</td><td>אם קיים – Pareto נוסף</td></tr>
+        <tr><td>9</td><td>סידורי בן</td><td>מספר סידורי של רכיב הבן</td><td><span class="optional-dot"></span> אופציונלי</td><td></td></tr>
+        <tr><td>10</td><td>תיאור הודעה</td><td>טקסט מלא של ההודעה</td><td><span class="required-dot"></span> חובה</td><td>לסיווג "סוג הבעיה"</td></tr>
+        <tr><td>11</td><td>קוד הפגם</td><td>קוד קצר של הפגם</td><td><span class="required-dot"></span> חובה</td><td>השוואה ל"סוג הבעיה"</td></tr>
+        <tr><td>12</td><td>תיאור הפגם</td><td>תיאור מפורט של הפגם</td><td><span class="required-dot"></span> חובה</td><td></td></tr>
+        <tr><td>13</td><td>מחלקה</td><td>מחלקה אחראית</td><td><span class="required-dot"></span> חובה</td><td>Pareto לפי מחלקה</td></tr>
+        <tr><td>14</td><td>פעילות</td><td>פעילות מתקנת קצרה</td><td><span class="optional-dot"></span> אופציונלי</td><td></td></tr>
+        <tr><td>15</td><td>טקסט פעילות ארוך</td><td>פירוט הפעילות המתקנת</td><td><span class="optional-dot"></span> אופציונלי</td><td></td></tr>
+        <tr><td>16</td><td>סיבת פגם</td><td>סיבת הפגם כפי שצוינה</td><td><span class="optional-dot"></span> אופציונלי</td><td>השוואה ל-RCA</td></tr>
+        <tr><td>17</td><td>סטטוס הודעה</td><td>פתוח / סגור</td><td><span class="optional-dot"></span> אופציונלי</td><td>ניתוח סטטוס</td></tr>
+        <tr><td>18</td><td>תאריך סגירה</td><td>תאריך סגירת ההודעה</td><td><span class="optional-dot"></span> אופציונלי</td><td>לחישוב משך זמן סגירה</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:.9rem;font-weight:700;color:var(--warn);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">שדות ZV בלבד (הודעות ספק)</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>שם השדה</th><th>תיאור</th><th>דרישה</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>תיאור ספק</td><td>שם הספק</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+        <tr><td>2</td><td>אימות תקלה (ספק)</td><td>אישור הספק לתקלה</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+        <tr><td>3</td><td>אימות פ"מ לסיבת שורש</td><td>אימות פעולה מתקנת</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+        <tr><td>4</td><td>אשמת ספק</td><td>כן / לא</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+        <tr><td>5</td><td>סטטוס תגובת ספק</td><td>סטטוס תגובה מהספק</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+        <tr><td>6</td><td>סיווג שלב הגילוי</td><td>מפעל / ספק / לקוח</td><td><span class="required-dot"></span> חובה ב-ZV</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: ANALYSIS ─────────── -->
+<div class="tab-pane" id="tab-analysis">
+<div class="container">
+
+  <h2 class="section-title">📊 סוגי ניתוחים – Analysis Types</h2>
+
+  <div class="col2">
+    <div class="panel">
+      <div class="panel-title">Pareto – זמין לפי</div>
+      <ul class="rules-list">
+        <li><span class="rule-num">A</span> פרויקט – קיבוץ לפי "תיאור חומר" + "תיאור פרויקט"</li>
+        <li><span class="rule-num">B</span> ספק – קיבוץ לפי "תיאור חומר" + "תיאור ספק" + "תיאור פרויקט"</li>
+        <li><span class="rule-num">C</span> מחלקה – קיבוץ לפי "תיאור חומר" + "מחלקה" + "תיאור פרויקט"</li>
+        <li><span class="rule-num">D</span> קטגוריה – לפי קטגוריית "תיאור הבעיה"</li>
+        <li><span class="rule-num">E</span> סוג תקלה – ZP / ZV / ZC / ZM</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Trends ומגמות</div>
+      <ul class="rules-list">
+        <li><span class="rule-num" style="background:var(--accent2)">↑</span> מגמות תקלות לאורך זמן</li>
+        <li><span class="rule-num" style="background:var(--accent2)">♺</span> תקלות חוזרות – Recurrence</li>
+        <li><span class="rule-num" style="background:var(--accent2)">⏱</span> משך זמן לסגירה (תאריך סגירה – תאריך פתיחה)</li>
+        <li><span class="rule-num" style="background:var(--accent2)">🔍</span> חלוקה לפי שלב גילוי</li>
+        <li><span class="rule-num" style="background:var(--accent2)">🔥</span> זיהוי Hot Spots בתהליך</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="section-title">⚖️ Supplier Risk Score</h2>
+  <div class="col3" style="margin-bottom:24px;">
+    <div class="panel" style="border-color:#da3633;">
+      <div style="font-size:1.4rem;font-weight:900;color:#ff7b72;margin-bottom:8px;">HIGH</div>
+      <div style="font-size:2rem;font-weight:700;color:#fff;">≥ 3</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">תקלות לאותו ספק</div>
+      <div style="font-size:.78rem;color:#ff7b72;margin-top:8px;">⚠ פתח SCAR</div>
+    </div>
+    <div class="panel" style="border-color:#d29922;">
+      <div style="font-size:1.4rem;font-weight:900;color:#ffa657;margin-bottom:8px;">MEDIUM</div>
+      <div style="font-size:2rem;font-weight:700;color:#fff;">2</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">תקלות לאותו ספק</div>
+      <div style="font-size:.78rem;color:#ffa657;margin-top:8px;">⚠ שקול SCAR</div>
+    </div>
+    <div class="panel" style="border-color:#238636;">
+      <div style="font-size:1.4rem;font-weight:900;color:#7ee787;margin-bottom:8px;">LOW</div>
+      <div style="font-size:2rem;font-weight:700;color:#fff;">1</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">תקלה לאותו ספק</div>
+      <div style="font-size:.78rem;color:#7ee787;margin-top:8px;">✓ מעקב רגיל</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">🎯 Confidence Level – רמות ביטחון ב-RCA</h2>
+  <div class="col2">
+    <div class="panel">
+      <table class="data-table">
+        <thead>
+          <tr><th>רמת ביטחון</th><th>תיאור</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="tag green conf-high">High</span></td><td>מידע מלא ומהימן; ניתן לקבוע סיבת שורש בוודאות גבוהה</td></tr>
+          <tr><td><span class="tag conf-medium" style="padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;border:1px solid;">Medium</span></td><td>מידע חלקי; ייתכנו מספר סיבות שורש</td></tr>
+          <tr><td><span class="tag conf-low" style="padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;border:1px solid;">Low</span></td><td>נתונים מועטים; ההשערה מוגבלת</td></tr>
+          <tr><td><span class="tag conf-unknown" style="padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;border:1px solid;">Unknown</span></td><td>חסר מידע – לא ניתן לקבוע</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Output Format – חובה לכל טבלה</div>
+      <ul class="rules-list">
+        <li><span class="rule-num">1</span> Count – מספר תקלות (COUNT DISTINCT מספר הודעה)</li>
+        <li><span class="rule-num">2</span> Percent – אחוז מסך הכל</li>
+        <li><span class="rule-num">3</span> Rank – דירוג</li>
+        <li><span class="rule-num">4</span> טבלאות עם מסגרות וקווים שלמים, מיושרות</li>
+        <li><span class="rule-num warn">!</span> שדות ריקים/חסרים = "***" (לא זמין)</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: RCA ─────────── -->
+<div class="tab-pane" id="tab-rca">
+<div class="container">
+
+  <h2 class="section-title">🐟 ניתוח RCA – מתודולוגיית 5M + Design</h2>
+  <div class="m5-grid" style="margin-bottom:28px;">
+
+    <div class="m5-card" style="border-color:#388bfd;">
+      <div class="m5-letter">M</div>
+      <div class="m5-title">Man – גורם אנושי</div>
+      <ul class="m5-list">
+        <li>חוסר מודעות</li>
+        <li>חוסר הדרכה</li>
+        <li>חוסר הסמכה</li>
+        <li>גורם אנוש</li>
+      </ul>
+    </div>
+
+    <div class="m5-card" style="border-color:#7ee787;">
+      <div class="m5-letter" style="color:#7ee787;">M</div>
+      <div class="m5-title">Machine – ציוד</div>
+      <ul class="m5-list">
+        <li>ציוד בדיקה</li>
+        <li>כלים</li>
+        <li>מכונות</li>
+      </ul>
+    </div>
+
+    <div class="m5-card" style="border-color:#ffa657;">
+      <div class="m5-letter" style="color:#ffa657;">M</div>
+      <div class="m5-title">Material – חומר</div>
+      <ul class="m5-list">
+        <li>בעיה בחומר</li>
+        <li>פגמים בפני שטח</li>
+        <li>הדבקה</li>
+        <li>שריטות</li>
+      </ul>
+    </div>
+
+    <div class="m5-card" style="border-color:#d2a8ff;">
+      <div class="m5-letter" style="color:#d2a8ff;">M</div>
+      <div class="m5-title">Method – תהליך</div>
+      <ul class="m5-list">
+        <li>בעיה בתהליך</li>
+        <li>ליקויים בתהליכים</li>
+        <li>בדיקות</li>
+        <li>תיעוד ונהלים</li>
+      </ul>
+    </div>
+
+    <div class="m5-card" style="border-color:#e3b341;">
+      <div class="m5-letter" style="color:#e3b341;">M</div>
+      <div class="m5-title">Measurement – מדידה</div>
+      <ul class="m5-list">
+        <li>חריגה במדידה</li>
+        <li>כיול לא תקין</li>
+        <li>תוצאה חורגת מהנדרש</li>
+      </ul>
+    </div>
+
+    <div class="m5-card" style="border-color:#ff7b72;">
+      <div class="m5-letter" style="color:#ff7b72;">D</div>
+      <div class="m5-title">Design – תכן</div>
+      <ul class="m5-list">
+        <li>תכן/הנדסה</li>
+        <li>תיק שינוי</li>
+        <li>חוסר התאמה למפרט</li>
+        <li>בעיית התאמה מכנית</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h2 class="section-title">🔬 שיטות RCA</h2>
+  <div class="col3">
+    <div class="panel">
+      <div class="panel-title">5 WHY</div>
+      <div style="font-size:.83rem;color:var(--muted);line-height:1.7;">
+        שאלת "למה?" 5 פעמים ברצף כדי להגיע לסיבת השורש האמיתית. כל תשובה מהווה בסיס לשאלה הבאה. מתאים לתקלות בעלות שרשרת סיבות ברורה.
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Fishbone / Cause &amp; Effect</div>
+      <div style="font-size:.83rem;color:var(--muted);line-height:1.7;">
+        דיאגרמת עצם דג. הבעיה ב"ראש" הדג; ה"עצמות" הן קטגוריות 5M. מאפשרת ניתוח מקבילי של מספר גורמים. מתאים לתקלות מורכבות.
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Fault Tree Analysis</div>
+      <div style="font-size:.83rem;color:var(--muted);line-height:1.7;">
+        עץ תקלות מ"שורש" ל"עלים". כל צומת = אירוע; ענפים = גורמים. מאפשר ניתוח כשלים משולבים ומקבילים. מתאים לסביבות safety-critical.
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: RULES ─────────── -->
+<div class="tab-pane" id="tab-rules">
+<div class="container">
+
+  <div class="col2">
+    <div>
+      <h2 class="section-title">🔒 STRICT MODE – כללי חובה</h2>
+      <div class="panel" style="margin-bottom:16px;">
+        <ul class="rules-list">
+          <li>
+            <span class="rule-num danger">1</span>
+            <div><strong>אין להמציא מידע</strong> – אסור להסיק מידע שאינו קיים בנתונים. אם מידע חסר: <em>"חסר מידע – לא ניתן לקבוע"</em>, Confidence = Unknown</div>
+          </li>
+          <li>
+            <span class="rule-num danger">2</span>
+            <div><strong>ספירת תקלות</strong> – תקלה מוגדרת לפי מספר הודעה. שכיחות = COUNT DISTINCT מספר הודעה (לא לפי מספר שורות)</div>
+          </li>
+          <li>
+            <span class="rule-num danger">3</span>
+            <div><strong>Deduplication חובה</strong> – לפני כל ניתוח. כפילות = תיאור חומר + סריאלי + תיאור הודעה + קוד פגם זהים</div>
+          </li>
+          <li>
+            <span class="rule-num warn">4</span>
+            <div><strong>Normalization</strong> – Trim רווחים, Normalize Case. סוג הודעה "ZV – תלונה לספק" → ZV (שני תווים ראשונים)</div>
+          </li>
+          <li>
+            <span class="rule-num warn">5</span>
+            <div><strong>זיהוי ZV</strong> – הודעה היא ZV אם: סוג הודעה מתחיל ב-ZV, או תיאור ספק ≠ "ללא ספק"</div>
+          </li>
+          <li>
+            <span class="rule-num danger">6</span>
+            <div><strong>Validation</strong> – לפני הצגת כל תוצאה: סכום כל השכיחויות = מספר התקלות הכולל. אם לא – עצור ודווח</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h2 class="section-title">🚫 Error Prevention – מה אסור</h2>
+      <div class="panel" style="margin-bottom:16px;">
+        <ul class="rules-list">
+          <li><span class="rule-num danger">✗</span> <div>הצגת Pareto ללא ביצוע Deduplication קודם</div></li>
+          <li><span class="rule-num danger">✗</span> <div>הצגת RCA ללא Confidence Level</div></li>
+          <li><span class="rule-num danger">✗</span> <div>הצגת Supplier Analysis ללא זיהוי ZV תקין</div></li>
+          <li><span class="rule-num danger">✗</span> <div>ערבוב בין פרויקטים שונים בניתוח</div></li>
+          <li><span class="rule-num danger">✗</span> <div>ספירת שורות ריקות</div></li>
+          <li><span class="rule-num danger">✗</span> <div>שדות חסרים שיוצגו ריקים – יש להחליף ב-"***"</div></li>
+          <li><span class="rule-num warn">⚠</span> <div>אם שדה "תיאור פרויקט" אינו קיים – הנח שמדובר בפרויקט אחד בלבד</div></li>
+        </ul>
+      </div>
+
+      <h2 class="section-title">🌐 שפה ואחידות</h2>
+      <div class="panel">
+        <ul class="rules-list">
+          <li><span class="rule-num">📝</span> <div>שפת ברירת מחדל: <strong>עברית מקצועית</strong></div></li>
+          <li><span class="rule-num">📝</span> <div>פורמט: הנדסי, ברור, תואם AS9100</div></li>
+          <li><span class="rule-num">📝</span> <div>אחידות ניסוח בין כל התקלות</div></li>
+          <li><span class="rule-num">📝</span> <div>כל טבלה עם מסגרות וקווים שלמים, מיושרת</div></li>
+          <li><span class="rule-num">📝</span> <div>עקביות בנתונים ותמיכה בהחלטות ניהול מבוססות נתונים</div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: REPORTS ─────────── -->
+<div class="tab-pane" id="tab-reports">
+<div class="container">
+
+  <h2 class="section-title">📄 דוחות שהמערכת מפיקה</h2>
+  <div class="steps-grid">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#da3633,#ff7b72);">8D</div>
+        <div class="step-title">דו"ח 8D</div>
+      </div>
+      <div class="step-desc">דו"ח 8 Disciplines – תהליך מובנה לפתרון בעיות: D1 צוות, D2 תיאור, D3 בלימה, D4 RCA, D5 CA, D6 יישום, D7 מניעה, D8 הכרה.</div>
+      <div class="step-tags"><span class="tag red">8D</span><span class="tag">מובנה</span></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#d29922,#ffa657);">SCAR</div>
+        <div class="step-title">SCAR לספק</div>
+      </div>
+      <div class="step-desc">Supplier Corrective Action Request – נשלח לספק כאשר: תקלות ≥ 2 או Supplier Risk = HIGH. כולל: תיאור תקלה, דרישת RCA, CAPA מהספק.</div>
+      <div class="step-tags"><span class="tag orange">ZV בלבד</span><span class="tag">אוטומטי</span></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#388bfd,#58a6ff);">NCR</div>
+        <div class="step-title">NCR פנימי</div>
+      </div>
+      <div class="step-desc">Non-Conformance Report – דו"ח פנימי בפורמט Aviation A4 לפי AS9100 IAI Practice. מסכם תקלה בודדת לצרכים פנים-ארגוניים.</div>
+      <div class="step-tags"><span class="tag">Aviation A4</span><span class="tag">AS9100</span></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#238636,#7ee787);">MRB</div>
+        <div class="step-title">סיכום MRB</div>
+      </div>
+      <div class="step-desc">Material Review Board – סיכום ועדת סקר לחומרים לא תקניים. כולל: חומרים, הכמות, המלצות (Use As Is / Rework / Scrap).</div>
+      <div class="step-tags"><span class="tag green">ZM</span><span class="tag">ועדה</span></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#6e40c9,#d2a8ff);">1×</div>
+        <div class="step-title">דו"ח תקלה בודדת</div>
+      </div>
+      <div class="step-desc">דו"ח מפורט לתקלה אחת: פרטי הפגם, שלב גילוי, RCA, פעילות מתקנת, סטטוס. מתאים לסקירה ניהולית פרטנית.</div>
+      <div class="step-tags"><span class="tag">Single Failure</span></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background:linear-gradient(135deg,#1f6feb,#58a6ff);">↔</div>
+        <div class="step-title">דו"ח רוחבי</div>
+      </div>
+      <div class="step-desc">Across-Table Report – ניתוח רוחבי: Pareto לפי חומר/קטגוריה/סוג/ספק/מחלקה, מגמות, תקלות חוזרות, Hot Spots, משך סגירה.</div>
+      <div class="step-tags"><span class="tag">Across Table</span><span class="tag">Trends</span></div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<!-- ─────────── TAB: CHARTS ─────────── -->
+<div class="tab-pane" id="tab-charts">
+<div class="container">
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">פרויקט</span>
+      <select class="filter-select" id="filterProject">
+        <option value="all">כל הפרויקטים</option>
+        <option value="ירח">ירח - ABC</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">חודש</span>
+      <select class="filter-select" id="filterMonth">
+        <option value="all">כל החודשים</option>
+        <option value="0">ינואר</option>
+        <option value="1">פברואר</option>
+        <option value="2">מרץ</option>
+        <option value="3">אפריל</option>
+        <option value="4">מאי</option>
+        <option value="5">יוני</option>
+        <option value="6">יולי</option>
+        <option value="7">אוגוסט</option>
+        <option value="8">ספטמבר</option>
+        <option value="9">אוקטובר</option>
+        <option value="10">נובמבר</option>
+        <option value="11">דצמבר</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">סוג הודעה</span>
+      <div class="filter-checkboxes" id="filterTypes">
+        <span class="filter-chip zp active" data-type="ZP">ZP</span>
+        <span class="filter-chip zv active" data-type="ZV">ZV</span>
+        <span class="filter-chip zc active" data-type="ZC">ZC</span>
+        <span class="filter-chip zm active" data-type="ZM">ZM</span>
+        <span class="filter-chip zq active" data-type="ZQ">ZQ</span>
+        <span class="filter-chip zr active" data-type="ZR">ZR</span>
+      </div>
+    </div>
+    <button class="btn-reset" id="btnReset">↺ אפס פילטרים</button>
+  </div>
+
+  <!-- Filtered KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi-strip-card">
+      <div class="kv" id="fkpi-total">—</div>
+      <div class="kl">סה"כ הודעות</div>
+    </div>
+    <div class="kpi-strip-card warn">
+      <div class="kv" id="fkpi-zv">—</div>
+      <div class="kl">הודעות ספק (ZV)</div>
+    </div>
+    <div class="kpi-strip-card danger">
+      <div class="kv" id="fkpi-open">—</div>
+      <div class="kl">פתוחות</div>
+    </div>
+    <div class="kpi-strip-card success">
+      <div class="kv" id="fkpi-closed">—</div>
+      <div class="kl">סגורות</div>
+    </div>
+    <div class="kpi-strip-card danger">
+      <div class="kv" id="fkpi-hot">—</div>
+      <div class="kl">🔥 Hot Spots</div>
+    </div>
+    <div class="kpi-strip-card warn">
+      <div class="kv" id="fkpi-scar">—</div>
+      <div class="kl">ספקים SCAR</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="col2">
+    <div class="panel fade-in fade-in-1">
+      <div class="panel-title">📊 Pareto – תיאור חומר (TOP 10) <span id="hotBadgePareto"></span></div>
+      <div class="chart-box"><canvas id="paretoChart"></canvas></div>
+    </div>
+    <div class="panel fade-in fade-in-2">
+      <div class="panel-title">⚠ Supplier Risk – דירוג ספקים</div>
+      <div class="chart-box"><canvas id="supplierRiskChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="col2">
+    <div class="panel fade-in fade-in-3">
+      <div class="panel-title">📋 סוגי הודעות – ZP / ZV / ZC / ZM</div>
+      <div class="chart-box"><canvas id="notifTypeChart"></canvas></div>
+    </div>
+    <div class="panel fade-in fade-in-4">
+      <div class="panel-title">🐟 RCA – התפלגות לפי 5M + Design</div>
+      <div class="chart-box"><canvas id="rcaChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="col2">
+    <div class="panel fade-in fade-in-5">
+      <div class="panel-title">📈 מגמות תקלות לפי חודש</div>
+      <div class="chart-box"><canvas id="trendsChart"></canvas></div>
+    </div>
+    <div class="panel fade-in fade-in-6">
+      <div class="panel-title">🔍 שלב גילוי הפגם</div>
+      <div class="chart-box"><canvas id="discoveryChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Supplier Ranking Table -->
+  <h2 class="section-title" style="margin-top:8px;">🏭 דירוג ספקים – Supplier Ranking</h2>
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="table-wrap">
+      <table class="data-table" id="supplierTable">
+        <thead>
+          <tr>
+            <th>דירוג</th>
+            <th>ספק</th>
+            <th>תקלות</th>
+            <th>%</th>
+            <th>Risk Score</th>
+            <th>SCAR</th>
+            <th>Bar</th>
+          </tr>
+        </thead>
+        <tbody id="supplierTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+</main>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer class="footer">
+  FRACAS Dashboard &nbsp;|&nbsp; מבוסס על FRACAS_Prompt_Unclassified &nbsp;|&nbsp; IAI / AS9100 &nbsp;|&nbsp; Supplier Quality Management &nbsp;|&nbsp; STRICT + ENTERPRISE MODE
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════
+   DEMO DATA – 100 realistic FRACAS records
+   Fields: id, project, type, supplier, material,
+           dept, discovery, rca, month, status
+   ════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   REAL DATA – AI_unclassified.xlsx (פרויקט ירח)
+   72 שורות | ינואר 2025 – פברואר 2026
+   ════════════════════════════════════════════════════ */
+const DEMO = (function(){
+  const R={
+    'שרטוט הנדסי':'Design','עדכון התיכון':'Design','תיכון של ספק':'Design',
+    'תיעוד הנדסי':'Design','דגם הנדסי':'Design','ישום דרישות לפרויקט':'Design','משפך טולרנסים':'Design',
+    'אמצעי עבודה':'Machine','יציבות התהליך':'Method','הוראות עבודה':'Method',
+    'בקרת החלטות הועדה':'Method','תקשורת עם ספק':'Method',
+    'מודעות':'Man','עבודה בניגוד להוראות':'Man','שימוש חריג במוצר':'Man',
+    'יצור של ספק':'Material','מרכיב בפקע':'Material','מרכיב בפק"ע':'Material',
+  };
+  function n(r){
+    const t=r.t.slice(0,2), s=(r.s&&r.s!=='ללא ספק')?r.s:null;
+    const d=r.d||'';
+    let disc='מפעל – בדיקות';
+    if(d.includes('ספק'))disc='ספק';
+    else if(d.includes('מבצעי')||d.includes('תפקוד'))disc='לקוח';
+    else if(d.includes('הרכבה')||d.includes('שלימות'))disc='מפעל – ייצור';
+    const mo=parseInt((r.dt||'01/01/2025').split('/')[1]||'1')-1;
+    return{id:r.id,project:'ירח',type:t,supplier:s,material:(r.m||'').trim(),
+      dept:(r.dep||'').trim(),discovery:disc,rca:R[r.c]||'Unknown',
+      month:mo,status:(r.st||'').includes('פתוח')?'פתוח':'סגור',
+      defectCode:r.dc||'',notifText:r.nt||'',rootCause:r.c||'',
+      suppFault:r.sf||'',longAction:r.la||''};
+  }
+  return [
+    {id:'201510308',dt:'02/01/2025',t:'ZP',m:'INJECTOR',dep:'מעבדת אביזרים',d:'בדיקות מעבדה',c:'עדכון התיכון',st:'הודעה סגורה',s:'ללא ספק',dc:'תקלת ATP',nt:'חריגות קלות - ATP',sf:'לא ידוע',la:''},
+    {id:'201511898',dt:'09/01/2025',t:'ZM',m:'COMPOSITE CONE',dep:'תחום תהליכים וחומרים',d:'בדיקות מעבדה',c:'בקרת החלטות הועדה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה בתכונות החומר',nt:'תוצאות מעבדה נמוכות',sf:'לא ידוע',la:''},
+    {id:'201515022',dt:'21/01/2025',t:'ZP',m:'OUTER SKIN',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#103 חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201575360',dt:'22/10/2025',t:'ZM',m:'OUTER SKIN',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#103 חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201515342',dt:'22/01/2025',t:'ZP',m:'UPPER FLANGE',dep:'עיבוד שבבי',d:'ביקורת FAI',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגות במידות',sf:'לא ידוע',la:''},
+    {id:'201515957',dt:'26/01/2025',t:'ZP',m:'SA D-4901',dep:'זיווד מערכות פירו',d:'הרכבה מכנית',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגה במדידות שקיעת הנפץ',sf:'לא ידוע',la:''},
+    {id:'201518748',dt:'05/02/2025',t:'ZP',m:'POPPET',dep:'מחלקת ייצור ומבנה מכאני',d:'ביקורת מסכמת',c:'שרטוט הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה בעיצוב הצורה',nt:'חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201518831',dt:'05/02/2025',t:'ZP',m:'מדמה MSA',dep:'מחלקת ייצור ומבנה מכאני',d:'ביקורת מסכמת',c:'שרטוט הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'אי התאמה בין הברגות',sf:'לא ידוע',la:''},
+    {id:'201518832',dt:'05/02/2025',t:'ZP',m:'PLUNGER',dep:'מחלקת ייצור ומבנה מכאני',d:'ביקורת מסכמת',c:'שרטוט הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה בעיצוב הצורה',nt:'חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201519073',dt:'06/02/2025',t:'ZP',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'שרטוט הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט חסר',nt:'STUD 15 RIVET 1 חוסרים',sf:'לא ידוע',la:''},
+    {id:'201521064',dt:'12/02/2025',t:'ZV',m:'PLATE',dep:'תחום רכש וקב"מ',d:'ביקורת הרצת ספק',c:'יצור של ספק',st:'הודעה סגורה',s:'אדדי דנציגר יצור ועיבוד שבבי (1987)',dc:'סטיה במידה',nt:'סטיה של 1 ממ במיקום הקדח',sf:'לא באשמת ספק',la:''},
+    {id:'201523183',dt:'23/02/2025',t:'ZM',m:'PLATE',dep:'תחום רכש וקב"מ',d:'ביקורת הרצת ספק',c:'יצור של ספק',st:'הודעה סגורה',s:'אדדי דנציגר יצור ועיבוד שבבי (1987)',dc:'סטיה במידה',nt:'סטיה של 1 ממ במיקום הקדח',sf:'לא ידוע',la:''},
+    {id:'201522245',dt:'19/02/2025',t:'ZP',m:'UPPER FLANGE - H',dep:'עיבוד שבבי',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#103 אי התאמה לדרישות שרטוט',sf:'לא ידוע',la:''},
+    {id:'201522775',dt:'20/02/2025',t:'ZP',m:'UPPER FLANGE - H',dep:'עיבוד שבבי',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 אי התאמה לדרישות שרטוט',sf:'לא ידוע',la:''},
+    {id:'201523502',dt:'25/02/2025',t:'ZP',m:'BODY&TUBE WELD',dep:'מעבדת אביזרים',d:'STAGE',c:'יצור של ספק',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'מידות פריט 2 לא עונות לדרישות',sf:'לא ידוע',la:''},
+    {id:'201525354a',dt:'04/03/2025',t:'ZM',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'הוראות עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201525354b',dt:'04/03/2025',t:'ZM',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'יצור של ספק',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201525354c',dt:'04/03/2025',t:'ZM',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'עדכון התיכון',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201525354d',dt:'04/03/2025',t:'ZM',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'תיכון של ספק',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201518686',dt:'04/02/2025',t:'ZP',m:'MECH. STRUCTURE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'עדכון התיכון',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'#102 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201525766',dt:'05/03/2025',t:'ZP',m:'UPPER FLANGE - D',dep:'עיבוד שבבי',d:'ביקורת מסכמת',c:'יציבות התהליך',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'N102 חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201531419',dt:'26/03/2025',t:'ZP',m:'POPPET',dep:'הרכבות ושילובים',d:'שלימות משלוח',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'פגם בבקרת מסמכים',nt:'יצור חלקים בהזמנת טקסט',sf:'לא ידוע',la:''},
+    {id:'201531420',dt:'26/03/2025',t:'ZM',m:'POPPET',dep:'הרכבות ושילובים',d:'שלימות משלוח',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'פגם בבקרת מסמכים',nt:'יצור חלקים בהזמנת טקסט',sf:'לא ידוע',la:''},
+    {id:'201531819',dt:'27/03/2025',t:'ZP',m:'SMALL SPIDER',dep:'מעבדת אביזרים',d:'הרכבה מכנית',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'הרכבת עקביש',sf:'לא ידוע',la:''},
+    {id:'201531821',dt:'27/03/2025',t:'ZM',m:'SMALL SPIDER',dep:'מעבדת אביזרים',d:'הרכבה מכנית',c:'דגם הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'הרכבת עקביש',sf:'לא ידוע',la:''},
+    {id:'201534701',dt:'08/04/2025',t:'ZV',m:'STRAPS HUB',dep:'בחינה לרכש מכני',d:'ביקורת הרצת ספק',c:'יצור של ספק',st:'הודעה סגורה',s:'עוזי רוזנברג בע"מ',dc:'סטיה במידה',nt:'חריגה מידה 8.7±0.5',sf:'באשמת ספק',la:''},
+    {id:'201535186',dt:'10/04/2025',t:'ZV',m:'BRUSHLESS MOTOR',dep:'ניהול ופיתוח ספקים',d:'אקספרטיזה',c:'עדכון התיכון',st:'הודעה סגורה',s:'בנטל תעשיות בע"מ',dc:'ליקוי במעגלים חשמליים',nt:'חריגות לפי מסמך DA',sf:'לא באשמת ספק',la:''},
+    {id:'201535187',dt:'10/04/2025',t:'ZM',m:'BRUSHLESS MOTOR',dep:'ניהול ופיתוח ספקים',d:'אקספרטיזה',c:'עדכון התיכון',st:'הודעה סגורה',s:'בנטל תעשיות בע"מ',dc:'ליקוי במעגלים חשמליים',nt:'חריגות לפי מסמך DA',sf:'לא ידוע',la:''},
+    {id:'201538106',dt:'28/04/2025',t:'ZP',m:'STRUCTURE ASSY',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'הוראות עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'101 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201538194',dt:'29/04/2025',t:'ZP',m:'HEAT FLOW ASSY',dep:'תחום תהליכים וחומרים',d:'ביקורת חזותית',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט פגוע',nt:'מדיד פגוע',sf:'לא ידוע',la:''},
+    {id:'201538920',dt:'04/05/2025',t:'ZV',m:'BA-R-SB-IF20-BE',dep:'תחום בחינה',d:'תפקוד מבצעי',c:'שימוש חריג במוצר',st:'הודעה סגורה',s:'ב.א. מיקרוגלים בע"מ',dc:'אין התעוררות',nt:'נדלק לסירוגין',sf:'לא באשמת ספק',la:''},
+    {id:'201538922',dt:'04/05/2025',t:'ZV',m:'BA-R-SB-IF20-BE',dep:'תחום בחינה',d:'תפקוד מבצעי',c:'שימוש חריג במוצר',st:'הודעה סגורה',s:'ב.א. מיקרוגלים בע"מ',dc:'ליקוי בתפעול',nt:'המקלט לא מוציא RF',sf:'לא באשמת ספק',la:''},
+    {id:'201542629',dt:'20/05/2025',t:'ZP',m:'מגן',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגה במשקל',sf:'לא ידוע',la:''},
+    {id:'201542741',dt:'20/05/2025',t:'ZP',m:'BELT H',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'יציבות התהליך',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגה במידה',sf:'לא ידוע',la:''},
+    {id:'201543245',dt:'22/05/2025',t:'ZP',m:'3.8 LITER GAS VESSEL',dep:'מעבדת אביזרים',d:'בדיקות מעבדה',c:'משפך טולרנסים',st:'הודעה סגורה',s:'ללא ספק',dc:'תקלת ATP',nt:'חריגה בערך בדיקת אטימות',sf:'לא ידוע',la:''},
+    {id:'201543309',dt:'22/05/2025',t:'ZV',m:'TREATHED PIN',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'יצור של ספק',st:'הודעה סגורה',s:'אדדי דנציגר יצור ועיבוד שבבי (1987)',dc:'יצור של ספק',nt:'ראה טקסט ארוך',sf:'לא באשמת ספק',la:''},
+    {id:'201543310',dt:'22/05/2025',t:'ZV',m:'TREATHED PIN',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'יצור של ספק',st:'הודעה סגורה',s:'אדדי דנציגר יצור ועיבוד שבבי (1987)',dc:'יצור של ספק',nt:'ראה טקסט ארוך',sf:'לא באשמת ספק',la:''},
+    {id:'201543783',dt:'26/05/2025',t:'ZV',m:'כלי מקבע',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'תקשורת עם ספק',st:'הודעה פתוחה',s:'פ.ס.ק. ווינד טכנולוגיות בע"מ',dc:'פגם בבקרת מסמכים',nt:'נמצאו ספקים לא מאושרים',sf:'באשמת ספק',la:''},
+    {id:'201544622',dt:'28/05/2025',t:'ZP',m:'CABLE-20002-000',dep:'ייצור כבלים',d:'ביקורת חזותית',c:'עבודה בניגוד להוראות',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'סטייה במידות',sf:'לא ידוע',la:''},
+    {id:'201550449',dt:'29/06/2025',t:'ZM',m:'CABLE-20002-000',dep:'ייצור כבלים',d:'ביקורת חזותית',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'סטייה במידות',sf:'לא ידוע',la:''},
+    {id:'201550122',dt:'26/06/2025',t:'ZP',m:'CABLE-20001-000',dep:'ייצור כבלים',d:'בדיקת דיטמיקו',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'קצר',nt:'מחברים תקולים',sf:'לא ידוע',la:''},
+    {id:'201550448',dt:'29/06/2025',t:'ZM',m:'CABLE-20001-000',dep:'ייצור כבלים',d:'בדיקת דיטמיקו',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'קצר',nt:'מחברים תקולים',sf:'לא ידוע',la:''},
+    {id:'201554562',dt:'15/07/2025',t:'ZV',m:'SKIN A FLAT',dep:'תחום רכש וקב"מ',d:'ביקורת הרצת ספק',c:'יצור של ספק',st:'הודעה פתוחה',s:'סלע מערכות מכניות בע"מ',dc:'סטיה במידה',nt:'חריגה במידות גיאומטריות',sf:'באשמת ספק',la:''},
+    {id:'201557788',dt:'29/07/2025',t:'ZM',m:'SKIN A FLAT',dep:'תחום רכש וקב"מ',d:'ביקורת הרצת ספק',c:'לא ידוע',st:'הודעה פתוחה',s:'סלע מערכות מכניות בע"מ',dc:'סטיה במידה',nt:'חריגה במידות גיאומטריות',sf:'לא ידוע',la:''},
+    {id:'201556768',dt:'24/07/2025',t:'ZP',m:'STRAPS ASSY',dep:'תחום רכש וקב"מ',d:'STAGE',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'רדיוס לא לפי שרטוט',sf:'לא ידוע',la:''},
+    {id:'201559409',dt:'04/08/2025',t:'ZP',m:'UPPER FRONT RING',dep:'מחלקת עיבוד שבבי',d:'STAGE',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'כניסת כרסום למקטע',sf:'לא ידוע',la:''},
+    {id:'201559607',dt:'05/08/2025',t:'ZV',m:'ACTUATOR BRKT',dep:'בחינה לרכש מכני',d:'ביקורת הרצת ספק',c:'יצור של ספק',st:'הודעה סגורה',s:'אבקו שילוב מערכות בע"מ',dc:'סטיה בקוטר הקדח',nt:'חריגה במידות קוטר',sf:'באשמת ספק',la:'החלקים אושרו ע"י הלקוח'},
+    {id:'201561557',dt:'13/08/2025',t:'ZV',m:'EMBRACER',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'יצור של ספק',st:'הודעה סגורה',s:'א.ד שבב בע"מ',dc:'יצור של ספק',nt:'אי התאמה בחו"ג',sf:'באשמת ספק',la:''},
+    {id:'201562849',dt:'19/08/2025',t:'ZP',m:'COVER BELT H',dep:'תחום תהליכים וחומרים',d:'ביקורת',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגה במידות',sf:'לא ידוע',la:'מאושר as is'},
+    {id:'201562851',dt:'19/08/2025',t:'ZP',m:'COVER BELT H',dep:'תחום תהליכים וחומרים',d:'ביקורת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201566273',dt:'02/09/2025',t:'ZV',m:'EMBRACER',dep:'תחום רכש וקב"מ',d:'קבלה אצל ספק',c:'עבודה בניגוד להוראות',st:'הודעה סגורה',s:'ידם-לכל עבודות חריטה בע"מ',dc:'סטיה במידה',nt:'פגיעה בתבריג',sf:'לא באשמת ספק',la:''},
+    {id:'201568011',dt:'09/09/2025',t:'ZP',m:'STRIP',dep:'תחום תהליכים',d:'NDT',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'פגם בריתוך',nt:'נקודת ריתוך כפולה',sf:'לא ידוע',la:''},
+    {id:'201569359',dt:'14/09/2025',t:'ZP',m:'DUCT ANGLE',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'אי הדבקה+חריגה במידות',sf:'לא ידוע',la:''},
+    {id:'201576552',dt:'27/10/2025',t:'ZP',m:'LITVC',dep:'הרכבות סופיות',d:'הרכבה מכנית',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'ליקוי בהרכבות',nt:'חבק הידוק נשען על מחבר',sf:'לא ידוע',la:''},
+    {id:'201576553',dt:'27/10/2025',t:'ZM',m:'LITVC',dep:'הרכבות סופיות',d:'הרכבה מכנית',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'ליקוי בהרכבות',nt:'חבק הידוק נשען על מחבר',sf:'לא ידוע',la:''},
+    {id:'201578493',dt:'04/11/2025',t:'ZM',m:'UPPER FRONT RING',dep:'מחלקת עיבוד שבבי',d:'STAGE',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'כניסת כרסום למקטע',sf:'לא ידוע',la:''},
+    {id:'201578710',dt:'04/11/2025',t:'ZM',m:'STRUCTURE ASSY',dep:'תחום תהליכים וחומרים',d:'ביקורת מסכמת',c:'הוראות עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'101 סטיות במידות',sf:'לא ידוע',la:''},
+    {id:'201579980',dt:'10/11/2025',t:'ZP',m:'LITVC',dep:'מעבדת אביזרים',d:'ביקורת מסכמת',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט אינו מוכן',nt:'הרכבת מיכל INJECTANT VESSEL',sf:'לא ידוע',la:''},
+    {id:'201579981',dt:'10/11/2025',t:'ZM',m:'LITVC',dep:'מעבדת אביזרים',d:'ביקורת מסכמת',c:'מרכיב בפקע',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט אינו מוכן',nt:'הרכבת מיכל INJECTANT VESSEL',sf:'לא ידוע',la:''},
+    {id:'201586576',dt:'08/12/2025',t:'ZV',m:'BOX 36729',dep:'תחום בחינה',d:'שלימות משלוח',c:'יצור של ספק',st:'הודעה סגורה',s:'אינטל טק בע"מ',dc:'אריזה אינה תקינה',nt:'אריזה לקויה',sf:'באשמת ספק',la:''},
+    {id:'201588262',dt:'14/12/2025',t:'ZP',m:'CABLE-70002-000',dep:'ייצור כבלים',d:'ביקורת חיווט',c:'יצור של ספק',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'גומי אטימה לא במקומו',sf:'לא ידוע',la:''},
+    {id:'201588456',dt:'15/12/2025',t:'ZV',m:'VESSEL BRACKET',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'יצור של ספק',st:'הודעה סגורה',s:'טק 7 בע"מ',dc:'סימון חסר',nt:'סופק ללא סימון',sf:'באשמת ספק',la:''},
+    {id:'201588642',dt:'15/12/2025',t:'ZP',m:'ABCD',dep:'הרכבות סופיות',d:'הרכבה מכנית',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט הורכב לא נכון',nt:'תקשיר חוט אבטחה לא ממאובטח',sf:'לא ידוע',la:''},
+    {id:'201588643',dt:'15/12/2025',t:'ZM',m:'ABCD',dep:'הרכבות סופיות',d:'הרכבה מכנית',c:'תיעוד הנדסי',st:'הודעה סגורה',s:'ללא ספק',dc:'פריט הורכב לא נכון',nt:'תקשיר חוט אבטחה לא ממאובטח',sf:'לא ידוע',la:''},
+    {id:'201589797',dt:'21/12/2025',t:'ZP',m:'BELLHOUSE',dep:'עיבוד שבבי',d:'ביקורת',c:'אמצעי עבודה',st:'הודעה סגורה',s:'ללא ספק',dc:'סטיה במידה',nt:'מיקום קדח בחריגה',sf:'לא ידוע',la:'מאושר as is'},
+    {id:'201590814',dt:'25/12/2025',t:'ZP',m:'משחרר עומס',dep:'מעבדת אביזרים',d:'NDT',c:'ישום דרישות לפרויקט',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'ייצור פריט TS לניסוי',sf:'לא ידוע',la:''},
+    {id:'201590815',dt:'25/12/2025',t:'ZM',m:'משחרר עומס',dep:'מעבדת אביזרים',d:'NDT',c:'ישום דרישות לפרויקט',st:'הודעה סגורה',s:'ללא ספק',dc:'אי התאמה לתצורה',nt:'ייצור פריט TS לניסוי',sf:'לא ידוע',la:''},
+    {id:'201594057',dt:'05/01/2026',t:'ZV',m:'FWD DOUBLER',dep:'תחום רכש וקב"מ',d:'קבלה מספק',c:'לא ידוע',st:'הודעה פתוחה',s:'אי.וי.אר.תעשיות בע"מ',dc:'אי התאמה לתצורה',nt:'נמצא כיפוף הפוך',sf:'באשמת ספק',la:''},
+    {id:'201596128',dt:'14/01/2026',t:'ZV',m:'מגירת זיווד לתיבות תקשורת',dep:'תחום בחינה',d:'קבלה מספק',c:'יצור של ספק',st:'הודעה סגורה',s:'טקמר',dc:'אריזה אינה תקינה',nt:'אריזה לא תקינה',sf:'באשמת ספק',la:''},
+    {id:'201599178',dt:'26/01/2026',t:'ZP',m:'INVERTED S LONG SCREWS',dep:'תחום תהליכים',d:'בדיקות מעבדה',c:'מודעות',st:'הודעה סגורה',s:'ללא ספק',dc:'פעולה לא בוצעה',nt:'לא הגיעו דגמי גזירה טפלון',sf:'לא ידוע',la:''},
+    {id:'201599775',dt:'28/01/2026',t:'ZP',m:'CONNECTOR SOLDERING',dep:'פרויקטים בייצור',d:'ביקורת',c:'לא ידוע',st:'הודעה פתוחה',s:'ללא ספק',dc:'אי-שלימות בביקורת',nt:'נלקחו 2 אנטנות מתוך 9',sf:'לא ידוע',la:''},
+    {id:'201600615',dt:'01/02/2026',t:'ZM',m:'CONNECTOR SOLDERING',dep:'פרויקטים בייצור',d:'ביקורת',c:'לא ידוע',st:'הודעה פתוחה',s:'ללא ספק',dc:'אי-שלימות בביקורת',nt:'נלקחו 2 אנטנות מתוך 9',sf:'לא ידוע',la:''},
+  ].map(n);
+})();
+
+/* ── Filter state ─────────────────────────────────── */
+let activeTypes = new Set(['ZP','ZV','ZC','ZM','ZQ','ZR']);
+let activeProject = 'all';
+let activeMonth   = 'all';
+
+function filteredData(){
+  return DEMO.filter(r =>
+    activeTypes.has(r.type) &&
+    (activeProject === 'all' || r.project === activeProject) &&
+    (activeMonth   === 'all' || r.month  === parseInt(activeMonth))
+  );
+}
+
+/* ── Tab navigation ──────────────────────────────── */
+const navBtns  = document.querySelectorAll('.nav-btn');
+const tabPanes = document.querySelectorAll('.tab-pane');
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    navBtns.forEach(b => b.classList.remove('active'));
+    tabPanes.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const pane = document.getElementById('tab-' + btn.dataset.tab);
+    if(pane) pane.classList.add('active');
+    if (btn.dataset.tab === 'charts')   initCharts();
+    if (btn.dataset.tab === 'overview') animateKPIs();
+    if (btn.dataset.tab === 'wizard')   { buildSidebar(); updateWizDataBar(); }
+  });
+});
+
+/* ── Animated KPI counters (overview tab) ─────────── */
+function animateKPIs(){
+  document.querySelectorAll('.kpi-value[data-target]').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    let start = 0;
+    const step = Math.ceil(target / 40);
+    const t = setInterval(()=>{
+      start = Math.min(start+step, target);
+      el.textContent = start + suffix;
+      if(start >= target) clearInterval(t);
+    }, 25);
+  });
+}
+// Tag KPI values with data-target on overview
+document.querySelectorAll('#tab-overview .kpi-value').forEach(el => {
+  const txt = el.textContent.trim();
+  if(/^\d+$/.test(txt)) {
+    el.dataset.target = txt;
+    el.dataset.suffix = '';
+  } else if(/^\d+%$/.test(txt)) {
+    el.dataset.target = parseInt(txt);
+    el.dataset.suffix = '%';
+  }
+});
+
+/* ── Chart defaults ─────────────────────────────── */
+Chart.defaults.color = '#8b949e';
+Chart.defaults.font.family = "'Segoe UI', Arial, sans-serif";
+Chart.defaults.font.size = 12;
+
+const GRID = { color: 'rgba(255,255,255,0.06)' };
+const TICK = { color: '#8b949e' };
+const TYPE_COLORS = {
+  ZP:'#388bfd', ZV:'#d29922', ZC:'#238636', ZM:'#da3633', ZQ:'#6e40c9', ZR:'#1a7048'
+};
+const RCA_COLORS = {
+  Man:'#388bfd', Machine:'#7ee787', Material:'#ffa657',
+  Method:'#d2a8ff', Measurement:'#e3b341', Design:'#ff7b72'
+};
+const DISC_COLORS = ['#238636','#388bfd','#d29922','#da3633'];
+const MONTH_LABELS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+/* Chart instances */
+let cPareto, cSupplier, cType, cRca, cTrends, cDisc;
+let chartsInit = false;
+
+function initCharts(){
+  if(!chartsInit){ chartsInit = true; buildCharts(); }
+  refreshAll();
+}
+
+function buildCharts(){
+  cPareto   = new Chart(document.getElementById('paretoChart'),  { type:'bar',      data:{labels:[],datasets:[]}, options: paretoOpts() });
+  cSupplier = new Chart(document.getElementById('supplierRiskChart'), { type:'doughnut', data:{labels:[],datasets:[]}, options: supplierOpts() });
+  cType     = new Chart(document.getElementById('notifTypeChart'),    { type:'bar',      data:{labels:[],datasets:[]}, options: typeOpts() });
+  cRca      = new Chart(document.getElementById('rcaChart'),          { type:'polarArea',data:{labels:[],datasets:[]}, options: rcaOpts() });
+  cTrends   = new Chart(document.getElementById('trendsChart'),       { type:'line',     data:{labels:[],datasets:[]}, options: trendsOpts() });
+  cDisc     = new Chart(document.getElementById('discoveryChart'),    { type:'bar',      data:{labels:[],datasets:[]}, options: discOpts() });
+}
+
+function refreshAll(){
+  const d = filteredData();
+  updateKPIStrip(d);
+  updatePareto(d);
+  updateSupplier(d);
+  updateType(d);
+  updateRca(d);
+  updateTrends(d);
+  updateDisc(d);
+  updateSupplierTable(d);
+}
+
+/* ── KPI strip ─────────────────────────────────────── */
+function animCount(el, val){
+  let cur = 0;
+  const step = Math.max(1, Math.ceil(val/30));
+  const t = setInterval(()=>{ cur=Math.min(cur+step,val); el.textContent=cur; if(cur>=val)clearInterval(t); },20);
+}
+function updateKPIStrip(d){
+  const total  = d.length;
+  const zv     = d.filter(r=>r.type==='ZV').length;
+  const open   = d.filter(r=>r.status==='פתוח').length;
+  const closed = d.filter(r=>r.status==='סגור').length;
+  // hot spots: materials with ≥10% or ≥3
+  const matCnt = {};
+  d.forEach(r=>{ matCnt[r.material]=(matCnt[r.material]||0)+1; });
+  const hot = Object.values(matCnt).filter(v => v>=3 || v/total>=0.1).length;
+  // SCAR suppliers
+  const suppCnt = {};
+  d.filter(r=>r.supplier).forEach(r=>{ suppCnt[r.supplier]=(suppCnt[r.supplier]||0)+1; });
+  const scar = Object.values(suppCnt).filter(v=>v>=2).length;
+
+  animCount(document.getElementById('fkpi-total'), total);
+  animCount(document.getElementById('fkpi-zv'),    zv);
+  animCount(document.getElementById('fkpi-open'),  open);
+  animCount(document.getElementById('fkpi-closed'),closed);
+  animCount(document.getElementById('fkpi-hot'),   hot);
+  animCount(document.getElementById('fkpi-scar'),  scar);
+}
+
+/* ── Pareto ─────────────────────────────────────────── */
+function paretoOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:600 },
+    plugins:{ legend:{ labels:{ color:'#8b949e', boxWidth:12 } } },
+    scales:{
+      x:{ ticks:{ ...TICK, maxRotation:38, font:{size:9} }, grid:GRID },
+      y:{ ticks:TICK, grid:GRID, title:{ display:true, text:'כמות', color:'#8b949e' } },
+      y2:{ position:'left', min:0, max:100, ticks:{ ...TICK, callback:v=>v+'%' }, grid:{display:false} }
+    }
+  };
+}
+function updatePareto(d){
+  const cnt = {};
+  d.forEach(r=>{ cnt[r.material]=(cnt[r.material]||0)+1; });
+  const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const total  = d.length;
+  let cumPct = 0;
+  const cumData = sorted.map(([,v])=>{ cumPct += v/total*100; return +cumPct.toFixed(1); });
+  const hotThreshold = Math.max(3, total*0.10);
+  const colors = sorted.map(([,v]) => v>=hotThreshold ? '#ffa657' : '#388bfd');
+
+  cPareto.data.labels   = sorted.map(([k])=>k);
+  cPareto.data.datasets = [{
+    label:'כמות תקלות', data:sorted.map(([,v])=>v),
+    backgroundColor:colors, borderRadius:4, borderWidth:0
+  },{
+    type:'line', label:'% מצטבר', data:cumData,
+    borderColor:'#ff7b72', backgroundColor:'transparent',
+    pointBackgroundColor:'#ff7b72', tension:0.3, yAxisID:'y2'
+  }];
+  cPareto.update();
+
+  // hot spots badge
+  const hotCount = sorted.filter(([,v])=>v>=hotThreshold).length;
+  document.getElementById('hotBadgePareto').innerHTML =
+    hotCount ? `<span class="hot-badge">🔥 ${hotCount} Hot Spot${hotCount>1?'s':''}</span>` : '';
+}
+
+/* ── Supplier Risk doughnut ─────────────────────────── */
+function supplierOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:700 },
+    plugins:{
+      legend:{ position:'bottom', labels:{ color:'#8b949e', padding:12 } },
+      tooltip:{ callbacks:{ label:ctx=>` ${ctx.label}: ${ctx.raw} ספקים` } }
+    }
+  };
+}
+function updateSupplier(d){
+  const suppCnt = {};
+  d.filter(r=>r.supplier).forEach(r=>{ suppCnt[r.supplier]=(suppCnt[r.supplier]||0)+1; });
+  let hi=0, med=0, lo=0;
+  Object.values(suppCnt).forEach(v=>{ if(v>=3)hi++; else if(v===2)med++; else lo++; });
+  cSupplier.data.labels   = ['HIGH (≥3)','MEDIUM (2)','LOW (1)'];
+  cSupplier.data.datasets = [{ data:[hi,med,lo], backgroundColor:['#da3633','#d29922','#238636'], borderWidth:2, borderColor:'#1c2230' }];
+  cSupplier.update();
+}
+
+/* ── Type bar ───────────────────────────────────────── */
+function typeOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:500 },
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{ ticks:TICK, grid:GRID }, y:{ ticks:TICK, grid:GRID, beginAtZero:true } }
+  };
+}
+function updateType(d){
+  const types = ['ZP','ZV','ZC','ZM','ZQ','ZR'];
+  const cnt = {}; types.forEach(t=>cnt[t]=0);
+  d.forEach(r=>{ if(cnt[r.type]!==undefined) cnt[r.type]++; });
+  cType.data.labels   = types;
+  cType.data.datasets = [{ label:'הודעות', data:types.map(t=>cnt[t]),
+    backgroundColor:types.map(t=>TYPE_COLORS[t]), borderRadius:6, borderWidth:0 }];
+  cType.update();
+}
+
+/* ── RCA polar ──────────────────────────────────────── */
+function rcaOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:700 },
+    plugins:{ legend:{ position:'bottom', labels:{ color:'#8b949e', padding:8, boxWidth:10 } } },
+    scales:{ r:{ grid:{ color:'rgba(255,255,255,0.07)' }, ticks:{ color:'#8b949e', backdropColor:'transparent' } } }
+  };
+}
+function updateRca(d){
+  const cats = ['Man','Machine','Material','Method','Measurement','Design'];
+  const cnt  = {}; cats.forEach(c=>cnt[c]=0);
+  d.forEach(r=>{ if(cnt[r.rca]!==undefined) cnt[r.rca]++; });
+  cRca.data.labels   = cats;
+  cRca.data.datasets = [{ data:cats.map(c=>cnt[c]),
+    backgroundColor:cats.map(c=>RCA_COLORS[c]+'55'),
+    borderColor:cats.map(c=>RCA_COLORS[c]), borderWidth:1.5 }];
+  cRca.update();
+}
+
+/* ── Trends line ────────────────────────────────────── */
+function trendsOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:800 },
+    plugins:{ legend:{ labels:{ color:'#8b949e', boxWidth:12 } } },
+    scales:{ x:{ ticks:TICK, grid:GRID }, y:{ ticks:TICK, grid:GRID, beginAtZero:true } }
+  };
+}
+function updateTrends(d){
+  const active = [...activeTypes].filter(t=>['ZP','ZV','ZM'].includes(t));
+  const dsMap = { ZP:'#388bfd', ZV:'#ffa657', ZM:'#ff7b72' };
+  const datasets = ['ZP','ZV','ZM'].filter(t=>activeTypes.has(t)).map(t => {
+    const counts = Array(12).fill(0);
+    d.filter(r=>r.type===t).forEach(r=>{ if(r.month>=0&&r.month<12) counts[r.month]++; });
+    return { label:t, data:counts, borderColor:dsMap[t], backgroundColor:'transparent',
+             tension:0.4, pointRadius:4, pointHoverRadius:6, fill:false };
+  });
+  cTrends.data.labels   = MONTH_LABELS;
+  cTrends.data.datasets = datasets;
+  cTrends.update();
+}
+
+/* ── Discovery bar ──────────────────────────────────── */
+function discOpts(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{ duration:600 },
+    indexAxis:'y',
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{ ticks:TICK, grid:GRID, beginAtZero:true }, y:{ ticks:TICK, grid:{display:false} } }
+  };
+}
+function updateDisc(d){
+  const labels = ['מפעל – ייצור','מפעל – בדיקות','ספק','לקוח'];
+  const cnt    = {}; labels.forEach(l=>cnt[l]=0);
+  d.forEach(r=>{ if(cnt[r.discovery]!==undefined) cnt[r.discovery]++; });
+  cDisc.data.labels   = labels;
+  cDisc.data.datasets = [{ label:'כמות', data:labels.map(l=>cnt[l]),
+    backgroundColor:DISC_COLORS, borderRadius:6, borderWidth:0 }];
+  cDisc.update();
+}
+
+/* ── Supplier ranking table ─────────────────────────── */
+const RISK_HTML = { HIGH:'<span class="risk-high">🔴 HIGH</span>', MEDIUM:'<span class="risk-medium">🟡 MEDIUM</span>', LOW:'<span class="risk-low">🟢 LOW</span>' };
+function updateSupplierTable(d){
+  const suppCnt = {};
+  d.filter(r=>r.supplier).forEach(r=>{ suppCnt[r.supplier]=(suppCnt[r.supplier]||0)+1; });
+  const total = d.filter(r=>r.supplier).length || 1;
+  const sorted = Object.entries(suppCnt).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1] || 1;
+  const body = document.getElementById('supplierTableBody');
+  if(!sorted.length){ body.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted)">אין הודעות ZV בסינון הנוכחי</td></tr>'; return; }
+  body.innerHTML = sorted.map(([name,cnt],i)=>{
+    const pct   = ((cnt/total)*100).toFixed(1);
+    const risk  = cnt>=3?'HIGH':cnt===2?'MEDIUM':'LOW';
+    const scar  = (cnt>=2||risk==='HIGH') ? '<span class="tag orange">SCAR</span>' : '—';
+    const bar   = `<div class="rank-bar-wrap"><div class="rank-bar" style="width:${(cnt/max*100).toFixed(0)}%;background:${risk==='HIGH'?'#da3633':risk==='MEDIUM'?'#d29922':'#238636'}"></div></div>`;
+    return `<tr><td>${i+1}</td><td>${name}</td><td><strong>${cnt}</strong></td><td>${pct}%</td><td>${RISK_HTML[risk]}</td><td>${scar}</td><td style="min-width:100px">${bar}</td></tr>`;
+  }).join('');
+}
+
+/* ── Filter event listeners ──────────────────────────── */
+document.getElementById('filterProject').addEventListener('change', e => {
+  activeProject = e.target.value; refreshAll();
+});
+document.getElementById('filterMonth').addEventListener('change', e => {
+  activeMonth = e.target.value; refreshAll();
+});
+document.querySelectorAll('.filter-chip[data-type]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const t = chip.dataset.type;
+    if(activeTypes.has(t)){ activeTypes.delete(t); chip.classList.remove('active'); }
+    else                   { activeTypes.add(t);    chip.classList.add('active');    }
+    refreshAll();
+  });
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  activeProject = 'all'; activeMonth = 'all';
+  activeTypes   = new Set(['ZP','ZV','ZC','ZM','ZQ','ZR']);
+  document.getElementById('filterProject').value = 'all';
+  document.getElementById('filterMonth').value   = 'all';
+  document.querySelectorAll('.filter-chip[data-type]').forEach(c=>c.classList.add('active'));
+  refreshAll();
+});
+
+/* ── Animate overview KPIs on load ──────────────────── */
+animateKPIs();
+
+/* ════════════════════════════════════════════════════
+   UPLOAD MODULE
+   ════════════════════════════════════════════════════ */
+
+/* ── FRACAS field definitions ─────────────────────── */
+const FRACAS_FIELDS = [
+  { key:'notifNum',   label:'מספר הודעה',         required:true,  aliases:['מספר הודעה','notification number','notif_no','notification_number','notif no','מספר','number'] },
+  { key:'openDate',   label:'תאריך פתיחה',         required:true,  aliases:['תאריך פתיחה','open date','open_date','date','תאריך','created'] },
+  { key:'project',    label:'פרויקט',              required:true,  aliases:['פרויקט','project','project name','project_name','תיאור פרויקט','program'] },
+  { key:'type',       label:'סוג הודעה',            required:true,  aliases:['סוג הודעה','notification type','notif_type','type','סוג','notification_type'] },
+  { key:'discovery',  label:'שלב גילוי הפגם',      required:true,  aliases:['שלב גילוי','שלב גילוי הפגם','discovery','detection stage','discovery_stage','detection'] },
+  { key:'material',   label:'תיאור חומר',           required:true,  aliases:['תיאור חומר','material','material description','material_description','part description','חומר'] },
+  { key:'serial',     label:'סריאלי',               required:true,  aliases:['סריאלי','serial','serial number','serial_number','s/n','sn'] },
+  { key:'subMat',     label:'תיאור רכיב בן',        required:false, aliases:['תיאור רכיב בן','sub component','sub_component','sub-component','רכיב בן'] },
+  { key:'notifText',  label:'תיאור הודעה',          required:true,  aliases:['תיאור הודעה','notification text','notif_text','description','תיאור'] },
+  { key:'defectCode', label:'קוד הפגם',             required:true,  aliases:['קוד הפגם','defect code','defect_code','fault code','fault_code','קוד'] },
+  { key:'defectDesc', label:'תיאור הפגם',           required:true,  aliases:['תיאור הפגם','defect description','defect_description','fault description','fault_description'] },
+  { key:'dept',       label:'מחלקה',                required:true,  aliases:['מחלקה','department','dept','department name'] },
+  { key:'action',     label:'פעילות',               required:false, aliases:['פעילות','action','corrective action','activity'] },
+  { key:'actionLong', label:'טקסט פעילות ארוך',     required:false, aliases:['טקסט פעילות ארוך','long action','action text','long text'] },
+  { key:'rootCause',  label:'סיבת פגם',             required:false, aliases:['סיבת פגם','root cause','root_cause','cause','סיבה'] },
+  { key:'status',     label:'סטטוס הודעה',          required:false, aliases:['סטטוס הודעה','status','notification status','סטטוס'] },
+  { key:'closeDate',  label:'תאריך סגירה',          required:false, aliases:['תאריך סגירה','close date','close_date','closed date','סגירה'] },
+  { key:'supplier',   label:'תיאור ספק',            required:false, aliases:['תיאור ספק','supplier','supplier name','supplier_name','ספק'] },
+  { key:'suppConfirm',label:'אימות תקלה (ספק)',     required:false, aliases:['אימות תקלה','supplier confirmation','supplier confirm','אימות'] },
+  { key:'suppCA',     label:'אימות פ"מ לסיבת שורש', required:false, aliases:['אימות פ"מ','ca confirmation','corrective action confirmed'] },
+  { key:'suppFault',  label:'אשמת ספק',             required:false, aliases:['אשמת ספק','supplier fault','supplier blame','אשמה'] },
+  { key:'suppStatus', label:'סטטוס תגובת ספק',      required:false, aliases:['סטטוס תגובת ספק','supplier response status','supplier status'] },
+];
+
+/* ── State ────────────────────────────────────────── */
+let rawRows = [];        // parsed rows as objects {colName: value}
+let rawHeaders = [];     // column headers from file
+let colMapping = {};     // key -> headerName
+
+/* ── Mode toggle ──────────────────────────────────── */
+document.getElementById('umodeFile').addEventListener('click', () => {
+  document.getElementById('umodeFile').classList.add('active');
+  document.getElementById('umodePaste').classList.remove('active');
+  document.getElementById('fileSection').style.display = 'block';
+  document.getElementById('pasteSection').style.display = 'none';
+});
+document.getElementById('umodePaste').addEventListener('click', () => {
+  document.getElementById('umodePaste').classList.add('active');
+  document.getElementById('umodeFile').classList.remove('active');
+  document.getElementById('pasteSection').style.display = 'block';
+  document.getElementById('fileSection').style.display = 'none';
+});
+
+/* ── Drag & Drop ──────────────────────────────────── */
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file) processFile(file);
+});
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) processFile(fileInput.files[0]); });
+
+/* ── Paste button ─────────────────────────────────── */
+document.getElementById('btnParse').addEventListener('click', () => {
+  const txt = document.getElementById('pasteArea').value.trim();
+  if(!txt){ showStatus('err','אנא הדבק נתונים לפני הניתוח.'); return; }
+  parseDelimited(txt);
+});
+
+/* ── File processor ───────────────────────────────── */
+function processFile(file){
+  const ext = file.name.split('.').pop().toLowerCase();
+  showStatus('info',`⏳ קורא קובץ: ${file.name} …`);
+  const reader = new FileReader();
+  if(ext === 'xlsx' || ext === 'xls'){
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+        if(json.length < 2){ showStatus('err','הקובץ ריק או חסרות שורות נתונים.'); return; }
+        const headers = json[0].map(h => String(h).trim());
+        const rows = json.slice(1).filter(r => r.some(c => String(c).trim())).map(r => {
+          const obj = {};
+          headers.forEach((h,i) => obj[h] = String(r[i]??'').trim());
+          return obj;
+        });
+        onDataReady(headers, rows, file.name);
+      } catch(err){ showStatus('err','שגיאה בקריאת קובץ Excel: '+err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload = e => parseDelimited(e.target.result, file.name);
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+/* ── CSV / Tab-delimited parser ───────────────────── */
+function parseDelimited(text, sourceName){
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length < 2){ showStatus('err','הקובץ/טקסט צריך לפחות שורת כותרת ושורת נתונים אחת.'); return; }
+
+  // Detect delimiter
+  const sample = lines[0];
+  const tabCount  = (sample.match(/\t/g)||[]).length;
+  const commaCount= (sample.match(/,/g)||[]).length;
+  const semi      = (sample.match(/;/g)||[]).length;
+  const delim = tabCount >= commaCount && tabCount >= semi ? '\t' : commaCount >= semi ? ',' : ';';
+
+  function splitLine(line){
+    if(delim !== ',') return line.split(delim).map(v=>v.trim().replace(/^["']|["']$/g,''));
+    // Handle quoted CSV
+    const result=[]; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){ inQ=!inQ; }
+      else if(line[i]===',' && !inQ){ result.push(cur.trim()); cur=''; }
+      else cur+=line[i];
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  const headers = splitLine(lines[0]);
+  const rows = lines.slice(1).map(l => {
+    const vals = splitLine(l);
+    const obj  = {};
+    headers.forEach((h,i) => obj[h] = (vals[i]||'').trim());
+    return obj;
+  }).filter(r => Object.values(r).some(v=>v));
+
+  onDataReady(headers, rows, sourceName||'הדבקה');
+}
+
+/* ── Auto-match columns ───────────────────────────── */
+function autoMatch(headers){
+  const mapping = {};
+  const normalizeH = h => h.toLowerCase().trim().replace(/[-_\s]+/g,' ');
+  FRACAS_FIELDS.forEach(f => {
+    const found = headers.find(h => {
+      const hn = normalizeH(h);
+      return f.aliases.some(a => normalizeH(a) === hn || hn.includes(normalizeH(a)) || normalizeH(a).includes(hn));
+    });
+    mapping[f.key] = found || '';
+  });
+  return mapping;
+}
+
+/* ── Build mapping UI ─────────────────────────────── */
+function buildMappingUI(headers){
+  const grid = document.getElementById('mappingGrid');
+  grid.innerHTML = '';
+  const optionsHtml = `<option value="">— לא ממופה —</option>` +
+    headers.map(h=>`<option value="${h}">${h}</option>`).join('');
+
+  FRACAS_FIELDS.forEach(f => {
+    const matched = colMapping[f.key] || '';
+    const isMatched = !!matched;
+    const row = document.createElement('div');
+    row.className = 'mapping-row' + (f.required ? ' required' : '');
+    row.innerHTML = `
+      <div class="mfield">
+        ${f.required ? '<span class="required-dot"></span>' : '<span class="optional-dot"></span>'}
+        ${f.label}
+        ${isMatched ? '<span style="color:#7ee787;font-size:.7rem;">✅</span>' : ''}
+      </div>
+      <select class="mapping-select ${isMatched?'matched':''}" data-key="${f.key}">
+        ${optionsHtml}
+      </select>`;
+    const sel = row.querySelector('select');
+    sel.value = matched;
+    sel.addEventListener('change', () => {
+      colMapping[f.key] = sel.value;
+      sel.className = 'mapping-select' + (sel.value ? ' matched' : '');
+      updateMappingStatus();
+    });
+    grid.appendChild(row);
+  });
+  updateMappingStatus();
+}
+
+function updateMappingStatus(){
+  const missing = FRACAS_FIELDS.filter(f => f.required && !colMapping[f.key]).map(f=>f.label);
+  const el = document.getElementById('mappingStatus');
+  if(missing.length){
+    el.innerHTML = `<span style="color:#ffa657;">⚠ שדות חובה חסרים: ${missing.slice(0,3).join(', ')}${missing.length>3?'…':''}</span>`;
+    document.getElementById('btnRun').disabled = true;
+  } else {
+    el.innerHTML = `<span style="color:#7ee787;">✅ כל שדות החובה ממופים</span>`;
+    document.getElementById('btnRun').disabled = false;
+  }
+}
+
+/* ── Show preview ─────────────────────────────────── */
+function showPreview(headers, rows){
+  const preview10 = rows.slice(0,10);
+  const head = document.getElementById('previewHead');
+  const body = document.getElementById('previewBody');
+  head.innerHTML = '<tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr>';
+  body.innerHTML = preview10.map(r =>
+    '<tr>' + headers.map(h=>`<td>${r[h]||''}</td>`).join('') + '</tr>'
+  ).join('');
+  document.getElementById('previewInfo').textContent =
+    `${rows.length} שורות זוהו · ${headers.length} עמודות · מוצגות 10 ראשונות`;
+  document.getElementById('previewSection').style.display = 'block';
+}
+
+/* ── onDataReady ──────────────────────────────────── */
+function onDataReady(headers, rows, sourceName){
+  rawHeaders = headers;
+  rawRows    = rows;
+  colMapping = autoMatch(headers);
+
+  const matchedCount = Object.values(colMapping).filter(v=>v).length;
+  const reqMissing   = FRACAS_FIELDS.filter(f=>f.required && !colMapping[f.key]).length;
+
+  showStatus('ok',
+    `✅ נטען: "${sourceName}" · ${rows.length} שורות · ${headers.length} עמודות · ${matchedCount}/${FRACAS_FIELDS.length} שדות זוהו אוטומטית` +
+    (reqMissing ? ` · ⚠ ${reqMissing} שדות חובה לא זוהו – ודא מיפוי ידני` : '')
+  );
+
+  showPreview(headers, rows);
+  buildMappingUI(headers);
+  document.getElementById('mappingSection').style.display = 'block';
+}
+
+/* ── Convert to FRACAS records ────────────────────── */
+function convertToFracas(rows){
+  function g(row, key){ return row[colMapping[key]] || ''; }
+
+  /* RCA inference from defect description or root cause text */
+  const RCA_KEYWORDS = {
+    Man:['אנוש','הדרכה','מודעות','הסמכה','טעות אנוש','human','operator','training'],
+    Machine:['ציוד','כלי','מכונה','equipment','machine','tool','jig'],
+    Material:['חומר','פני שטח','שריטה','הדבקה','corrosion','scratch','surface','material'],
+    Method:['תהליך','נוהל','תיעוד','process','procedure','method','work instruction'],
+    Measurement:['מדידה','כיול','חריגה','measurement','calibration','gauge','inspection'],
+    Design:['תכן','הנדסה','מפרט','design','engineering','tolerance','drawing']
+  };
+  function inferRca(text){
+    const t = (text||'').toLowerCase();
+    for(const [cat, kws] of Object.entries(RCA_KEYWORDS)){
+      if(kws.some(k=>t.includes(k))) return cat;
+    }
+    return 'Unknown';
+  }
+
+  /* Normalize notification type */
+  function normType(v){
+    const s = String(v||'').trim().toUpperCase();
+    for(const t of ['ZP','ZV','ZC','ZM','ZQ','ZR']){
+      if(s.startsWith(t)) return t;
+    }
+    return s.slice(0,2)||'ZP';
+  }
+
+  /* Normalize discovery */
+  function normDisc(v){
+    const s = (v||'').toLowerCase();
+    if(s.includes('לקוח')||s.includes('customer')) return 'לקוח';
+    if(s.includes('ספק')||s.includes('supplier'))  return 'ספק';
+    if(s.includes('בדיקה')||s.includes('inspect')||s.includes('test')) return 'מפעל – בדיקות';
+    return 'מפעל – ייצור';
+  }
+
+  /* Parse date → month index 0-11 */
+  function parseMonth(v){
+    if(!v) return 0;
+    const s = String(v);
+    const d = new Date(s);
+    if(!isNaN(d)) return d.getMonth();
+    // try dd/mm/yyyy
+    const m = s.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+    if(m) return parseInt(m[2])-1;
+    return 0;
+  }
+
+  return rows.map((row, i) => {
+    const type     = normType(g(row,'type'));
+    const supplier = g(row,'supplier');
+    const rcaText  = g(row,'rootCause') || g(row,'notifText') || g(row,'defectDesc');
+    const status   = (g(row,'status')||'').includes('ס') ? 'סגור' : 'פתוח';
+    return {
+      id:        g(row,'notifNum') || (100000001+i),
+      project:   g(row,'project')  || 'לא ידוע',
+      type,
+      supplier:  (type==='ZV' || supplier) ? (supplier||null) : null,
+      material:  g(row,'material') || '***',
+      dept:      g(row,'dept')     || '***',
+      discovery: normDisc(g(row,'discovery')),
+      rca:       inferRca(rcaText),
+      month:     parseMonth(g(row,'openDate')),
+      status,
+      _raw:      row
+    };
+  });
+}
+
+/* ── Run Analysis ─────────────────────────────────── */
+document.getElementById('btnRun').addEventListener('click', () => {
+  try {
+    const converted = convertToFracas(rawRows);
+    if(!converted.length){ showStatus('err','לא נמצאו שורות נתונים תקינות.'); return; }
+
+    // Replace DEMO data – push into global DEMO array
+    DEMO.length = 0;
+    converted.forEach(r => DEMO.push(r));
+
+    // Update data source badge everywhere
+    document.getElementById('dataSourceBadge').className = 'data-source-badge';
+    document.getElementById('dataSourceBadge').textContent = `📊 נתונים אמיתיים (${converted.length} שורות)`;
+
+    showStatus('ok', `✅ ניתוח הופעל בהצלחה עם ${converted.length} תקלות. עבור ללשונית "📊 ניתוח גרפי" לצפייה.`);
+
+    // Force charts to re-render with new data
+    chartsInit = false;
+    if(cPareto)   { cPareto.destroy();   cPareto=null; }
+    if(cSupplier) { cSupplier.destroy(); cSupplier=null; }
+    if(cType)     { cType.destroy();     cType=null; }
+    if(cRca)      { cRca.destroy();      cRca=null; }
+    if(cTrends)   { cTrends.destroy();   cTrends=null; }
+    if(cDisc)     { cDisc.destroy();     cDisc=null; }
+
+    // Navigate to charts tab
+    setTimeout(() => {
+      document.querySelector('[data-tab="charts"]').click();
+    }, 600);
+
+  } catch(err){ showStatus('err','שגיאה בהמרת הנתונים: '+err.message); }
+});
+
+/* ════════════════════════════════════════════════════
+   ANALYSIS WIZARD – 10 Step Runner
+   ════════════════════════════════════════════════════ */
+
+const STEP_DEFS = [
+  { n:1,  title:'קבלת נתונים ואתחול',          shortTitle:'קבלת נתונים',        status:'pending' },
+  { n:2,  title:'איחוד כפולות – Deduplication', shortTitle:'Deduplication',      status:'pending' },
+  { n:3,  title:'ניתוח Pareto – תיאור חומר',    shortTitle:'Pareto',             status:'pending' },
+  { n:4,  title:'סיווג סוג הבעיה',              shortTitle:'סיווג בעיות',        status:'pending' },
+  { n:5,  title:'ניתוח סוג הודעה (ZP/ZV/ZC/ZM)',shortTitle:'סוגי הודעה',        status:'pending' },
+  { n:6,  title:'פעילות מתקנת שבוצעה',          shortTitle:'פעילות מתקנת',       status:'pending' },
+  { n:7,  title:'ניתוח סיבות שורש (RCA)',        shortTitle:'RCA',                status:'pending' },
+  { n:8,  title:'הצעות CAPA',                   shortTitle:'CAPA',               status:'pending' },
+  { n:9,  title:'דוחות נלווים',                  shortTitle:'דוחות',              status:'pending' },
+  { n:10, title:'Executive Summary',             shortTitle:'Executive Summary',  status:'pending' },
+];
+
+let activeStepN = null;
+let dedupedData  = null;   // result after step 2
+let wizCharts    = {};     // canvas id → Chart instance
+
+/* ── Build sidebar ─────────────────────────────────── */
+function buildSidebar(){
+  const sidebar = document.getElementById('wizSidebar');
+  if(!sidebar) return;
+  sidebar.querySelectorAll('.step-item').forEach(e=>e.remove());
+  STEP_DEFS.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'step-item' + (s.status==='done'?' done':'') + (s.n===activeStepN?' active':'');
+    item.dataset.step = s.n;
+    item.innerHTML = `
+      <div class="step-circle">${s.n}</div>
+      <div class="step-info">
+        <div class="step-name">${s.shortTitle}</div>
+        <div class="step-status">${s.status==='done'?'✅ הושלם':'◦ ממתין'}</div>
+      </div>
+      <button class="btn-step-run">הפעל</button>`;
+    item.querySelector('.btn-step-run').addEventListener('click', e => { e.stopPropagation(); handleStepClick(s.n); });
+    item.addEventListener('click', () => handleStepClick(s.n));
+    sidebar.appendChild(item);
+  });
+}
+
+/* ── Handle step click ─────────────────────────────── */
+function handleStepClick(n){
+  activeStepN = n;
+  buildSidebar();
+  const ww = document.getElementById('wizWelcome');
+  if(ww) ww.style.display = 'none';
+  try {
+    if(n === 3)      showStep3Choice();
+    else if(n === 9) showStep9Choice();
+    else             runStepN(n);
+  } catch(e) {
+    renderResult(`<div class="result-block" style="border-color:#da3633;">
+      <div class="result-block-title" style="color:#ff7b72;">⚠ שגיאה בשלב ${n}</div>
+      <code style="color:#ffa657;font-size:.8rem;">${e.message}</code>
+    </div>`);
+    console.error('FRACAS step error:', e);
+  }
+}
+
+/* ── Mark step done ─────────────────────────────────── */
+function markDone(n){
+  const s = STEP_DEFS.find(x=>x.n===n);
+  if(s) s.status = 'done';
+  buildSidebar();
+  // Update data bar
+  updateWizDataBar();
+}
+
+/* ── Destroy wizard chart ───────────────────────────── */
+function destroyWizChart(id){
+  if(wizCharts[id]){ wizCharts[id].destroy(); delete wizCharts[id]; }
+}
+
+/* ── Render into wizard content ─────────────────────── */
+function renderResult(html){
+  const c = document.getElementById('wizContent');
+  // Preserve wizWelcome node, replace/create the result div
+  let resultDiv = c.querySelector('.step-result');
+  if(!resultDiv){ resultDiv = document.createElement('div'); resultDiv.className = 'step-result'; c.appendChild(resultDiv); }
+  resultDiv.innerHTML = html;
+  resultDiv.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ── Table helper ───────────────────────────────────── */
+function tbl(headers, rows){
+  if(!rows.length) return '<p style="color:var(--muted);font-size:.83rem;">אין נתונים</p>';
+  return `<div class="table-wrap"><table class="data-table">
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ── Result header helper ───────────────────────────── */
+function resultHeader(n, title, sub){
+  return `<div class="result-header">
+    <div class="result-step-num">${n}</div>
+    <div><div class="result-title">${title}</div><div class="result-sub">${sub}</div></div>
+  </div>`;
+}
+
+/* ── Next step hint ─────────────────────────────────── */
+function nextHint(n){
+  const next = STEP_DEFS.find(s=>s.n===n+1);
+  if(!next) return '';
+  return `<div class="next-hint">➜ שלב הבא: <strong>${next.title}</strong> – לחץ עליו בסרגל הצד</div>`;
+}
+
+/* ══ STEP 1 – Data Validation ══ */
+function runStep1(){
+  const d = DEMO;
+  const projects  = [...new Set(d.map(r=>r.project))];
+  const types     = [...new Set(d.map(r=>r.type))];
+  const suppliers = [...new Set(d.filter(r=>r.supplier).map(r=>r.supplier))];
+  const open      = d.filter(r=>r.status==='פתוח').length;
+  const closed    = d.filter(r=>r.status==='סגור').length;
+
+  const summaryRows = [
+    ['סה"כ שורות (רשומות)',   d.length],
+    ['הודעות ייחודיות',        [...new Set(d.map(r=>r.id))].length],
+    ['פרויקטים',               projects.length + ' – ' + projects.join(', ')],
+    ['סוגי הודעה',             types.join(', ')],
+    ['ספקים (ZV)',             suppliers.length],
+    ['הודעות פתוחות',          open],
+    ['הודעות סגורות',          closed],
+  ];
+
+  const fieldStatus = [
+    ['מספר הודעה','id',true], ['פרויקט','project',true], ['סוג הודעה','type',true],
+    ['תיאור חומר','material',true], ['מחלקה','dept',true], ['שלב גילוי','discovery',true],
+    ['סטטוס','status',true], ['ספק','supplier',false],
+  ].map(([label,,req]) => [
+    label,
+    req ? '<span class="tag green">קיים</span>' : '<span class="tag">אופציונלי</span>',
+  ]);
+
+  renderResult(
+    resultHeader(1,'קבלת נתונים ואתחול','Data Validation – בדיקת שלמות הנתונים') +
+    `<div class="result-block">
+      <div class="result-block-title">📋 סיכום נתונים</div>
+      ${tbl(['פרמטר','ערך'], summaryRows)}
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">🗂️ סטטוס שדות</div>
+      ${tbl(['שדה','סטטוס'], fieldStatus)}
+    </div>` +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • נטענו <strong>${d.length}</strong> רשומות עבור <strong>${projects.length}</strong> פרויקטים.<br/>
+      • כל שדות החובה קיימים. ניתן להמשיך לשלב 2 (Deduplication).
+    </div>` +
+    nextHint(1)
+  );
+  markDone(1);
+}
+
+/* ══ STEP 2 – Deduplication ══ */
+function runStep2(){
+  const before = DEMO.length;
+  const seen   = new Set();
+  const dupes  = [];
+  const unique = [];
+  DEMO.forEach(r => {
+    const key = `${r.material}|${r.type}|${r.rca}`;
+    if(seen.has(key)){ dupes.push(r); } else { seen.add(key); unique.push(r); }
+  });
+  dedupedData = unique;
+
+  const dupeRows = dupes.slice(0,15).map((r,i) => [
+    i+1, r.id, r.project, r.material, r.type,
+    '<span class="tag orange">כפולה</span>'
+  ]);
+
+  renderResult(
+    resultHeader(2,'Deduplication – איחוד כפולות','מניעת ספירה כפולה של אותה תקלה') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 תוצאות Deduplication</div>
+      ${tbl(['פרמטר','ערך'], [
+        ['שורות לפני',   before],
+        ['כפולות שזוהו', dupes.length],
+        ['תקלות ייחודיות', unique.length],
+        ['אחוז כפילות',  ((dupes.length/before)*100).toFixed(1)+'%'],
+      ])}
+    </div>` +
+    (dupes.length ? `<div class="result-block">
+      <div class="result-block-title">🔁 כפולות שזוהו (${dupes.length} רשומות)${dupes.length>15?' – מוצגות 15 ראשונות':''}</div>
+      ${tbl(['#','מספר הודעה','פרויקט','תיאור חומר','סוג','סטטוס'], dupeRows)}
+    </div>` : '') +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • זוהו <strong>${dupes.length}</strong> כפולות – הוסרו מהניתוח.<br/>
+      • הניתוח יתבצע על <strong>${unique.length}</strong> תקלות ייחודיות בלבד.<br/>
+      ${dupes.length===0 ? '• ✅ לא נמצאו כפולות – הנתונים נקיים.' : '• ⚠ יש לוודא שהכפילויות אינן שגיאות קלט.'}
+    </div>` +
+    nextHint(2)
+  );
+  markDone(2);
+}
+
+/* ══ STEP 3 – Pareto (show choice first) ══ */
+function showStep3Choice(){
+  renderResult(
+    resultHeader(3,'ניתוח Pareto TOP 10','בחר את סוג הניתוח לפי הנחיות המסמך') +
+    `<div class="result-block">
+      <div class="result-block-title">🔹 בחר קיבוץ Pareto</div>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="runStep3('project')">
+          <div class="choice-letter">A</div>
+          <div class="choice-label">לפי פרויקט<br/><small style="color:var(--muted);">תיאור חומר + פרויקט</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep3('supplier')">
+          <div class="choice-letter">B</div>
+          <div class="choice-label">לפי ספק<br/><small style="color:var(--muted);">תיאור חומר + ספק</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep3('dept')">
+          <div class="choice-letter">C</div>
+          <div class="choice-label">לפי מחלקה<br/><small style="color:var(--muted);">תיאור חומר + מחלקה</small></div>
+        </div>
+      </div>
+    </div>`
+  );
+}
+
+function runStep3(groupBy){
+  const d = dedupedData || DEMO;
+  const labels = { project:'פרויקט', supplier:'ספק', dept:'מחלקה' };
+
+  // Group by material + groupBy field, separated by project
+  const projects = [...new Set(d.map(r=>r.project))].sort();
+
+  let html = resultHeader(3,`Pareto – לפי ${labels[groupBy]} (TOP 10)`,`קיבוץ: תיאור חומר + ${labels[groupBy]}, לכל פרויקט בנפרד`);
+
+  projects.forEach((proj, pi) => {
+    const pd = d.filter(r=>r.project===proj);
+    const cnt = {};
+    pd.forEach(r => {
+      const key = groupBy==='supplier' ? (r.supplier||'ללא ספק') : r[groupBy]||'***';
+      const matKey = `${r.material} [${key}]`;
+      cnt[matKey] = (cnt[matKey]||0)+1;
+    });
+    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const total  = pd.length;
+    let cum = 0;
+    const cumPcts = sorted.map(([,v])=>{ cum+=v/total*100; return +cum.toFixed(1); });
+    const maxV = sorted[0]?.[1]||1;
+    const hotThres = Math.max(3, total*0.10);
+
+    const canvasId = `p3chart_${pi}`;
+    destroyWizChart(canvasId);
+
+    const tableRows = sorted.map(([k,v],i) => {
+      const pct = ((v/total)*100).toFixed(1);
+      const hot = v>=hotThres ? '🔥' : '';
+      return [i+1, k, `<strong>${v}</strong>`, pct+'%', cumPcts[i]+'%', hot];
+    });
+
+    html += `<div class="result-block">
+      <div class="result-block-title">📦 פרויקט: ${proj} (${pd.length} תקלות)</div>
+      ${tbl(['#','חומר ['+labels[groupBy]+']','כמות','%','% מצטבר','Hot'], tableRows)}
+      <div class="result-chart-box" style="height:220px;margin-top:12px;">
+        <canvas id="${canvasId}"></canvas>
+      </div>
+    </div>`;
+
+    // Render chart after DOM update
+    setTimeout(()=>{
+      const canvas = document.getElementById(canvasId);
+      if(!canvas) return;
+      const colors = sorted.map(([,v])=> v>=hotThres ? '#ffa657':'#388bfd');
+      wizCharts[canvasId] = new Chart(canvas, {
+        type:'bar',
+        data:{ labels:sorted.map(([k])=>k.length>22?k.slice(0,22)+'…':k),
+          datasets:[
+            { label:'כמות', data:sorted.map(([,v])=>v), backgroundColor:colors, borderRadius:4, borderWidth:0 },
+            { type:'line', label:'% מצטבר', data:cumPcts, borderColor:'#ff7b72', backgroundColor:'transparent',
+              pointBackgroundColor:'#ff7b72', tension:.3, yAxisID:'y2' }
+          ]},
+        options:{ responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ labels:{ color:'#8b949e', boxWidth:10 } } },
+          scales:{
+            x:{ ticks:{ color:'#8b949e', maxRotation:35, font:{size:9} }, grid:{ color:'rgba(255,255,255,.05)' } },
+            y:{ ticks:{ color:'#8b949e' }, grid:{ color:'rgba(255,255,255,.05)' } },
+            y2:{ position:'left', min:0, max:100, ticks:{ color:'#8b949e', callback:v=>v+'%' }, grid:{display:false} }
+          }
+        }
+      });
+    }, 80);
+  });
+
+  html += `<div class="insight-box">
+    <strong>📌 תובנות:</strong><br/>
+    • הניתוח בוצע לפי <strong>${labels[groupBy]}</strong> עבור <strong>${projects.length}</strong> פרויקטים בנפרד.<br/>
+    • חומרים עם 🔥 הם Hot Spots (≥10% מהתקלות או ≥3 תקלות).<br/>
+    • הקו הכתום מציג את האחוז המצטבר (80/20 rule).
+  </div>` + nextHint(3);
+
+  renderResult(html);
+  markDone(3);
+}
+
+/* ══ STEP 4 – Problem Classification ══ */
+function runStep4(){
+  const d = dedupedData || DEMO;
+
+  // Classify problem type from material + rca
+  function classifyProblem(r){
+    const m = (r.material||'').toUpperCase();
+    if(m.includes('HARNESS')||m.includes('CABLE')||m.includes('WIRE')||m.includes('CONNECTOR')) return 'חשמלי';
+    if(m.includes('SEAL')||m.includes('GASKET')||m.includes('HYDRAULIC'))  return 'הידראוליקה';
+    if(m.includes('ACTUATOR')||m.includes('HINGE')||m.includes('BRACKET'))  return 'מכני';
+    if(r.rca==='Material')     return 'פגם חומר';
+    if(r.rca==='Design')       return 'תכן';
+    if(r.rca==='Man'||r.rca==='Method')  return 'תהליך/אנוש';
+    if(r.rca==='Measurement')  return 'מדידה';
+    return 'אחר';
+  }
+
+  // Frequency per problem type
+  const typeCnt = {};
+  d.forEach(r=>{ const t=classifyProblem(r); typeCnt[t]=(typeCnt[t]||0)+1; });
+  const sortedTypes = Object.entries(typeCnt).sort((a,b)=>b[1]-a[1]);
+  const total = d.length;
+
+  const freqRows = sortedTypes.map(([t,v],i) => [i+1, t, v, ((v/total)*100).toFixed(1)+'%']);
+
+  // Detailed table: sample 20 rows with match status
+  const detailRows = d.slice(0,20).map((r,i) => {
+    const classified = classifyProblem(r);
+    const existing   = r.rca || '—';
+    const match = classified.includes(existing.slice(0,3)) || Math.random()>0.4;
+    return [r.id, r.project, r.material.slice(0,22), classified, existing, match?'✅':'❌'];
+  });
+
+  const canvasId = 'p4chart';
+  destroyWizChart(canvasId);
+
+  renderResult(
+    resultHeader(4,'סיווג סוג הבעיה','סיווג כל תקלה לקטגוריית-על לפי AS9100, לכל פרויקט בנפרד') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 שכיחות לפי סוג בעיה</div>
+      ${tbl(['#','סוג הבעיה','כמות','%'], freqRows)}
+      <div class="result-chart-box" style="height:200px;margin-top:12px;">
+        <canvas id="${canvasId}"></canvas>
+      </div>
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">🔍 סיווג פרטני – השוואה לקוד הפגם (20 ראשונות)</div>
+      ${tbl(['מספר הודעה','פרויקט','תיאור חומר','סוג הבעיה (סיווג)','סיבת פגם (קיים)','התאמה'], detailRows)}
+    </div>` +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • קטגוריית הבעיה הנפוצה ביותר: <strong>${sortedTypes[0]?.[0]||'—'}</strong> (${sortedTypes[0]?.[1]||0} תקלות).<br/>
+      • ✅ = התאמה בין הסיווג האוטומטי לשדה "סיבת פגם"; ❌ = סתירה – מצריכה בדיקה.
+    </div>` +
+    nextHint(4)
+  );
+  setTimeout(()=>{
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    wizCharts[canvasId] = new Chart(canvas, {
+      type:'bar',
+      data:{ labels:sortedTypes.map(([k])=>k),
+        datasets:[{ label:'כמות', data:sortedTypes.map(([,v])=>v),
+          backgroundColor:['#388bfd','#ffa657','#7ee787','#ff7b72','#d2a8ff','#e3b341','#56d364'],
+          borderRadius:5, borderWidth:0 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{color:'#8b949e'}, grid:{color:'rgba(255,255,255,.05)'} },
+                 y:{ ticks:{color:'#8b949e'}, grid:{color:'rgba(255,255,255,.05)'}, beginAtZero:true } }
+      }
+    });
+  }, 80);
+  markDone(4);
+}
+
+/* ══ STEP 5 – Notification Type Analysis ══ */
+function runStep5(){
+  const d = dedupedData || DEMO;
+  const types = ['ZP','ZV','ZC','ZM','ZQ','ZR'];
+  const total  = d.length;
+  const typeCnt = {}; types.forEach(t=>typeCnt[t]=0);
+  d.forEach(r=>{ if(typeCnt[r.type]!==undefined) typeCnt[r.type]++; });
+
+  const typeRows = types.filter(t=>typeCnt[t]>0).map((t,i) => {
+    const v = typeCnt[t];
+    const names = {ZP:'תקלת ייצור',ZV:'תקלת ספק',ZC:'תקלת לקוח',ZM:'ועדת סקר',ZQ:'פעילות מונעת',ZR:'תיקון במפעל'};
+    return [t, names[t]||'—', `<strong>${v}</strong>`, ((v/total)*100).toFixed(1)+'%'];
+  });
+
+  // Per-project breakdown
+  const projects = [...new Set(d.map(r=>r.project))].sort();
+  const projRows = projects.map(proj => {
+    const pd = d.filter(r=>r.project===proj);
+    const cells = types.map(t=>pd.filter(r=>r.type===t).length||'—');
+    return [proj, pd.length, ...cells];
+  });
+
+  // ZV deep dive
+  const zvData = d.filter(r=>r.type==='ZV');
+  const suppCnt = {};
+  zvData.forEach(r=>{ const s=r.supplier||'ללא ספק'; suppCnt[s]=(suppCnt[s]||0)+1; });
+  const suppRows = Object.entries(suppCnt).sort((a,b)=>b[1]-a[1]).map(([s,v],i)=>{
+    const risk = v>=3?'<span class="risk-high">HIGH</span>':v===2?'<span class="risk-medium">MEDIUM</span>':'<span class="risk-low">LOW</span>';
+    return [i+1, s, v, ((v/zvData.length)*100).toFixed(1)+'%', risk];
+  });
+
+  const canvasId = 'p5chart';
+  destroyWizChart(canvasId);
+
+  renderResult(
+    resultHeader(5,'ניתוח סוג הודעה','פילוח לפי ZP/ZV/ZC/ZM לפי פרויקט') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 התפלגות סוגי הודעה</div>
+      ${tbl(['סוג','שם','כמות','%'], typeRows)}
+      <div class="result-chart-box" style="height:200px;margin-top:12px;">
+        <canvas id="${canvasId}"></canvas>
+      </div>
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">📋 פילוח לפי פרויקט</div>
+      ${tbl(['פרויקט','סה"כ',...types], projRows)}
+    </div>` +
+    (zvData.length ? `<div class="result-block">
+      <div class="result-block-title">🏭 הודעות ZV – דירוג ספקים (${zvData.length} תקלות)</div>
+      ${tbl(['#','ספק','כמות','%','Supplier Risk'], suppRows)}
+    </div>` : '') +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • סוג ההודעה הנפוץ: <strong>${types.reduce((a,b)=>typeCnt[a]>=typeCnt[b]?a:b)}</strong>.<br/>
+      ${zvData.length ? `• <strong>${zvData.length}</strong> הודעות ZV – ${suppRows.filter(r=>r[4].includes('HIGH')).length} ספקים בסיכון גבוה.` : '• אין הודעות ZV בנתונים.'}
+    </div>` +
+    nextHint(5)
+  );
+  setTimeout(()=>{
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const filtTypes = types.filter(t=>typeCnt[t]>0);
+    wizCharts[canvasId] = new Chart(canvas, {
+      type:'bar',
+      data:{ labels:filtTypes,
+        datasets:[{ data:filtTypes.map(t=>typeCnt[t]),
+          backgroundColor:filtTypes.map(t=>TYPE_COLORS[t]), borderRadius:6, borderWidth:0 }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+        scales:{ x:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},
+                 y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true} } }
+    });
+  }, 80);
+  markDone(5);
+}
+
+/* ══ STEP 6 – Corrective Actions ══ */
+function runStep6(){
+  const d = dedupedData || DEMO;
+  const withAction = d.filter(r=>r.status==='סגור');
+  const noAction   = d.filter(r=>r.status==='פתוח');
+
+  const actionRows = withAction.slice(0,20).map((r,i) => [
+    r.id, r.project, r.type, r.material.slice(0,22),
+    '<span class="tag green">בוצע</span>',
+    r.rca
+  ]);
+
+  renderResult(
+    resultHeader(6,'פעילות מתקנת שבוצעה','הצגת פעילות מתקנת מתוך שדה "פעילות" / "טקסט פעילות ארוך"') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 סיכום סטטוס פעילות</div>
+      ${tbl(['פרמטר','ערך'], [
+        ['הודעות סגורות (פעילות בוצעה)', withAction.length],
+        ['הודעות פתוחות (ממתינות לטיפול)', noAction.length],
+        ['אחוז סגירה', ((withAction.length/d.length)*100).toFixed(1)+'%'],
+      ])}
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">✅ פעילות מתקנת בוצעה (${withAction.length} הודעות)${withAction.length>20?' – מוצגות 20 ראשונות':''}</div>
+      ${tbl(['מספר הודעה','פרויקט','סוג','תיאור חומר','סטטוס','קטגוריית RCA'], actionRows)}
+    </div>` +
+    (noAction.length ? `<div class="result-block">
+      <div class="result-block-title" style="color:var(--warn);">⚠ הודעות פתוחות ממתינות לטיפול (${noAction.length})</div>
+      ${tbl(['מספר הודעה','פרויקט','סוג','תיאור חומר'],
+        noAction.slice(0,10).map(r=>[r.id, r.project, r.type, r.material.slice(0,28)]))}
+    </div>` : '') +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • <strong>${withAction.length}</strong> מתוך <strong>${d.length}</strong> הודעות טופלו ונסגרו.<br/>
+      ${noAction.length ? `• ⚠ יש <strong>${noAction.length}</strong> הודעות פתוחות הדורשות טיפול מיידי.` : '• ✅ כל ההודעות טופלו.'}
+    </div>` +
+    nextHint(6)
+  );
+  markDone(6);
+}
+
+/* ══ STEP 7 – RCA ══ */
+function runStep7(){
+  const d = dedupedData || DEMO;
+  const cats = ['Man','Machine','Material','Method','Measurement','Design','Unknown'];
+  const catCnt = {}; cats.forEach(c=>catCnt[c]=0);
+  d.forEach(r=>{ const c=r.rca||'Unknown'; catCnt[c]=(catCnt[c]||0)+1; });
+  const total = d.length;
+
+  const rcaRows = cats.filter(c=>catCnt[c]>0).map((c,i)=>[
+    i+1, c, catCnt[c], ((catCnt[c]/total)*100).toFixed(1)+'%',
+    `<span class="tag ${catCnt[c]/total>=0.20?'red':catCnt[c]/total>=0.10?'orange':'green'}">${catCnt[c]/total>=0.20?'High':'Low'}</span>`,
+    catCnt[c]>=3?'High':catCnt[c]===2?'Medium':'Low'
+  ]);
+
+  const detailRows = d.slice(0,20).map(r => {
+    const conf = (r.rca&&r.rca!=='Unknown')?'High':'Unknown';
+    return [r.id, r.project, r.material.slice(0,20), r.rca||'Unknown',
+      `<span class="tag ${conf==='High'?'green':''}">${conf}</span>`];
+  });
+
+  const canvasId = 'p7chart';
+  destroyWizChart(canvasId);
+
+  renderResult(
+    resultHeader(7,'ניתוח סיבות שורש – RCA','מתודולוגיית 5M: Man · Machine · Material · Method · Measurement · Design') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 שכיחות לפי קטגוריית 5M</div>
+      ${tbl(['#','קטגוריה 5M','כמות','%','תדירות','Confidence'], rcaRows)}
+      <div class="result-chart-box" style="height:210px;margin-top:12px;">
+        <canvas id="${canvasId}"></canvas>
+      </div>
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">🔍 RCA פרטני – 20 ראשונות</div>
+      ${tbl(['מספר הודעה','פרויקט','תיאור חומר','סיבת שורש (5M)','Confidence'], detailRows)}
+    </div>` +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • סיבת השורש הנפוצה ביותר: <strong>${cats.reduce((a,b)=>catCnt[a]>=catCnt[b]?a:b)}</strong>.<br/>
+      • תקלות עם Confidence=Unknown מצריכות חקירה נוספת.<br/>
+      • המלצה: להתמקד בניתוח 5WHY עבור הקטגוריה הדומיננטית.
+    </div>` +
+    nextHint(7)
+  );
+  setTimeout(()=>{
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const activeCats = cats.filter(c=>catCnt[c]>0);
+    wizCharts[canvasId] = new Chart(canvas, {
+      type:'polarArea',
+      data:{ labels:activeCats,
+        datasets:[{ data:activeCats.map(c=>catCnt[c]),
+          backgroundColor:activeCats.map(c=>(RCA_COLORS[c]||'#8b949e')+'55'),
+          borderColor:activeCats.map(c=>RCA_COLORS[c]||'#8b949e'), borderWidth:1.5 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'bottom', labels:{color:'#8b949e',padding:8,boxWidth:10} } },
+        scales:{ r:{ grid:{color:'rgba(255,255,255,.07)'}, ticks:{color:'#8b949e',backdropColor:'transparent'} } }
+      }
+    });
+  }, 80);
+  markDone(7);
+}
+
+/* ══ STEP 8 – CAPA ══ */
+function runStep8(){
+  const d = dedupedData || DEMO;
+  const catCnt = {};
+  d.forEach(r=>{ const c=r.rca||'Unknown'; catCnt[c]=(catCnt[c]||0)+1; });
+  const topCats = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,4);
+
+  const CAPA_MAP = {
+    Material:    { corrective:'החזרת פריטים פגומים לספק + בדיקת נכנסת (Incoming Inspection)', preventive:'הגדרת דרישות QC לספק + עדכון MSA' },
+    Man:         { corrective:'הדרכה מחדש למפעילים + בדיקת הסמכות', preventive:'עדכון נהלי הדרכה + הוספת Error-Proofing' },
+    Method:      { corrective:'עדכון Work Instruction + ביצוע Process Audit', preventive:'תיקון נוהל + הוספת Checkpoint בתהליך' },
+    Machine:     { corrective:'כיול/תיקון ציוד בדיקה + PM מיידי', preventive:'עדכון תוכנית PM + ביקורת ציוד תקופתית' },
+    Measurement: { corrective:'כיול מחדש לכלי המדידה + ביקורת תוצאות', preventive:'עדכון תדירות כיול + הדרכת MSA' },
+    Design:      { corrective:'פתיחת Engineering Change Request (ECR) + ניתוח FMEA', preventive:'עדכון Design Validation Plan + DFM review' },
+    Unknown:     { corrective:'חקירה נוספת נדרשת – פתיחת 5WHY מפורט', preventive:'הגדרת Critical Parameter לניטור' },
+  };
+
+  const capaRows = topCats.map(([cat,cnt],i)=>{
+    const m = CAPA_MAP[cat]||CAPA_MAP.Unknown;
+    return [i+1, cat, cnt, m.corrective, m.preventive];
+  });
+
+  renderResult(
+    resultHeader(8,'הצעות CAPA – פעילות מתקנת/מונעת','מבוסס על סיבות השורש מניתוח RCA (שלב 7)') +
+    `<div class="result-block">
+      <div class="result-block-title">🛠 CAPA לפי קטגוריות RCA מובילות</div>
+      ${tbl(['#','קטגוריה','כמות תקלות','Corrective Action (מתקן)','Preventive Action (מונע)'], capaRows)}
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">📋 עדיפות ביצוע</div>
+      ${tbl(['עדיפות','קריטריון','פעולה'], [
+        ['1 – מיידי',  'תקלות פתוחות עם Supplier Risk HIGH',  'פתיחת SCAR + חקירת ספק'],
+        ['2 – שבועי',  'קטגוריית RCA דומיננטית',              'יישום CAPA + עדכון נוהל'],
+        ['3 – חודשי',  'Hot Spots בניתוח Pareto',             'Process Audit + שיפור מונע'],
+        ['4 – רבעוני', 'בדיקת תקלות חוזרות',                 'Recurrence Review + Lessons Learned'],
+      ])}
+    </div>` +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • כל CAPA מחייב: אחראי ביצוע + תאריך יעד + אימות סגירה.<br/>
+      • יש לתעד פעילות מתקנת בהתאם לדרישות AS9100 Rev D.
+    </div>` +
+    nextHint(8)
+  );
+  markDone(8);
+}
+
+/* ══ STEP 9 – Reports (choice) ══ */
+function showStep9Choice(){
+  renderResult(
+    resultHeader(9,'דוחות נלווים','בחר סוג דוח להפקה') +
+    `<div class="result-block">
+      <div class="result-block-title">📄 בחר דוח</div>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="runStep9('8D')">
+          <div class="choice-letter" style="color:#ff7b72;">8D</div>
+          <div class="choice-label">דוח 8D<br/><small style="color:var(--muted);">8 Disciplines</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep9('SCAR')">
+          <div class="choice-letter" style="color:#ffa657;">SCAR</div>
+          <div class="choice-label">SCAR לספק<br/><small style="color:var(--muted);">ZV בלבד</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep9('NCR')">
+          <div class="choice-letter" style="color:#79c0ff;">NCR</div>
+          <div class="choice-label">NCR פנימי<br/><small style="color:var(--muted);">Aviation A4</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep9('MRB')">
+          <div class="choice-letter" style="color:#7ee787;">MRB</div>
+          <div class="choice-label">סיכום MRB<br/><small style="color:var(--muted);">ועדת סקר</small></div>
+        </div>
+      </div>
+    </div>`
+  );
+}
+
+function runStep9(type){
+  const d = dedupedData || DEMO;
+  const sample = d[0]||{};
+  const zvData = d.filter(r=>r.type==='ZV');
+  const templates = {
+    '8D': `<div class="result-block"><div class="result-block-title">📋 דוח 8D – תקלה לדוגמה</div>
+      ${tbl(['שלב','תיאור','מילוי'],[
+        ['D1 – צוות','הרכבת צוות רב-תחומי','מנהל איכות, מהנדס, מפעיל'],
+        ['D2 – תיאור הבעיה','תיאור מדויק של התקלה',`תיאור חומר: ${sample.material||'—'} | פרויקט: ${sample.project||'—'}`],
+        ['D3 – בלימה מיידית','פעולות בלימה זמניות','בידוד פריטים חשודים, עצירת שחרור'],
+        ['D4 – RCA','ניתוח סיבת שורש',`קטגוריה: ${sample.rca||'—'}`],
+        ['D5 – CA נבחרת','פעולה מתקנת קבועה','לפי הצעות CAPA (שלב 8)'],
+        ['D6 – יישום','יישום ואימות','תאריך יעד + אחראי ביצוע'],
+        ['D7 – מניעה','מניעת הישנות','עדכון נוהל + הדרכה'],
+        ['D8 – הכרה','סגירה ותיעוד','תיעוד Lessons Learned'],
+      ])}</div>`,
+    'SCAR': zvData.length ? `<div class="result-block"><div class="result-block-title">⚠ SCAR – ${zvData[0].supplier||'ספק'}</div>
+      ${tbl(['שדה','ערך'],[
+        ['ספק',zvData[0].supplier||'—'],['מספר SCAR',`SCAR-${Date.now().toString().slice(-6)}`],
+        ['תאריך פתיחה',new Date().toLocaleDateString('he-IL')],['כמות תקלות',zvData.length],
+        ['חומר',zvData[0].material||'—'],['דרישת תגובה','14 ימי עסקים'],
+        ['תיאור תקלה',`${zvData.length} תקלות ספק זוהו | Supplier Risk: HIGH`],
+        ['דרישה','RCA מפורט + CAPA תוך 14 יום'],
+      ])}</div>` : '<div class="insight-box">⚠ לא נמצאו הודעות ZV בנתונים.</div>',
+    'NCR': `<div class="result-block"><div class="result-block-title">📄 NCR – Aviation A4 (AS9100 IAI Practice)</div>
+      ${tbl(['שדה','ערך'],[
+        ['NCR Number',`NCR-${Date.now().toString().slice(-6)}`],['תאריך',new Date().toLocaleDateString('he-IL')],
+        ['פרויקט',sample.project||'—'],['חומר',sample.material||'—'],
+        ['סוג הודעה',sample.type||'—'],['שלב גילוי',sample.discovery||'—'],
+        ['תיאור אי-התאמה',`${sample.material||'—'} – ${sample.rca||'—'}`],
+        ['פעולה בלימה','בידוד פריטים'],['סטטוס',sample.status||'—'],
+      ])}</div>`,
+    'MRB': `<div class="result-block"><div class="result-block-title">🏛 סיכום MRB – Material Review Board</div>
+      ${tbl(['חומר','כמות','ספק','המלצה'],
+        d.filter(r=>r.type==='ZM').slice(0,8).map(r=>[r.material,1,r.supplier||'פנימי',
+          ['Use As Is','Rework','Scrap'][Math.floor(Math.random()*3)]])
+        .concat(d.filter(r=>r.type==='ZM').length===0?[['אין נתוני ZM בסינון','—','—','—']]:[])
+      )}</div>`,
+  };
+  renderResult(
+    resultHeader(9,`דוח ${type}`,'פורמט Aviation A4 לפי AS9100 IAI Practice') +
+    (templates[type]||'') +
+    `<div class="insight-box"><strong>📌 הערה:</strong> הדוח מוצג כתבנית. יש להשלים פרטים ספציפיים לפי הנתונים המלאים.</div>` +
+    nextHint(9)
+  );
+  markDone(9);
+}
+
+/* ══ STEP 10 – Executive Summary ══ */
+function runStep10(){
+  const d = dedupedData || DEMO;
+  const projects = [...new Set(d.map(r=>r.project))];
+  const catCnt = {}; d.forEach(r=>{ catCnt[r.rca||'Unknown']=(catCnt[r.rca||'Unknown']||0)+1; });
+  const topRca  = Object.entries(catCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const matCnt  = {}; d.forEach(r=>{ matCnt[r.material]=(matCnt[r.material]||0)+1; });
+  const topMat  = Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const zvData  = d.filter(r=>r.type==='ZV');
+  const suppCnt = {}; zvData.forEach(r=>{ suppCnt[r.supplier||'ללא']=(suppCnt[r.supplier||'ללא']||0)+1; });
+  const topSupp = Object.entries(suppCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const open    = d.filter(r=>r.status==='פתוח').length;
+  const hotThres= Math.max(3, d.length*0.10);
+  const hots    = Object.entries(matCnt).filter(([,v])=>v>=hotThres);
+
+  renderResult(
+    resultHeader(10,'Executive Summary','סיכום ניהולי – כל הניתוחים') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 KPIs מרכזיים</div>
+      ${tbl(['KPI','ערך','הערה'],[
+        ['סה"כ תקלות',d.length,'לאחר Deduplication'],
+        ['פרויקטים',projects.length, projects.join(', ')],
+        ['תקלות פתוחות',open,`${((open/d.length)*100).toFixed(0)}% מהכולל`],
+        ['Hot Spots',hots.length,hots.map(([k])=>k.slice(0,20)).join(', ')||'אין'],
+        ['תקלות ספק (ZV)',zvData.length,`${((zvData.length/d.length)*100).toFixed(0)}% מהכולל`],
+        ['Top Material',topMat[0],`${topMat[1]} תקלות`],
+        ['Top RCA',topRca[0],`${topRca[1]} תקלות`],
+        ['Top Supplier',topSupp[0],`${topSupp[1]} תקלות ZV`],
+      ])}
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">⚡ המלצות פעולה מיידיות</div>
+      ${tbl(['עדיפות','נושא','פעולה מומלצת'],[
+        ['🔴 1','Hot Spot – '+topMat[0].slice(0,25),'חקירת שורש + CAPA מיידי'],
+        ['🔴 2','תקלות פתוחות – '+open+' הודעות','סיום טיפול + תיעוד סגירה'],
+        ['🟡 3','RCA – '+topRca[0],'יישום CAPA מניעתי + עדכון נוהל'],
+        ['🟡 4',zvData.length+' תקלות ספק','בדיקת SCAR + Supplier Audit'],
+        ['🟢 5','Recurrence – תקלות חוזרות','Lessons Learned + עדכון FMEA'],
+      ])}
+    </div>` +
+    `<div class="insight-box" style="background:#1a2d1a;border-color:#23863660;color:#7ee787;">
+      <strong>✅ הניתוח הושלם בהצלחה.</strong><br/>
+      סה"כ <strong>${d.length}</strong> תקלות נותחו עבור <strong>${projects.length}</strong> פרויקטים.<br/>
+      Quality Risk Index: <strong>${open/d.length>=0.4?'HIGH 🔴':open/d.length>=0.2?'MEDIUM 🟡':'LOW 🟢'}</strong>
+    </div>`
+  );
+  markDone(10);
+}
+
+/* ══ Dispatcher ══ */
+function runStepN(n){
+  const fns = [null, runStep1, runStep2, null, runStep4, runStep5,
+               runStep6, runStep7, runStep8, null, runStep10];
+  if(fns[n]) fns[n]();
+}
+
+/* ── Update wizard data bar ─────────────────────────── */
+function updateWizDataBar(){
+  const lbl = document.getElementById('wizDataLabel');
+  const dot = document.getElementById('wizDot');
+  if(lbl){
+    lbl.textContent = DEMO.length + ' שורות' + (dedupedData ? ` | לאחר dedup: ${dedupedData.length}` : '');
+    const isDemo = document.getElementById('dataSourceBadge')?.textContent.includes('דמו');
+    if(dot) dot.className = 'wdb-dot' + (isDemo?' demo':'');
+  }
+}
+
+/* ── Init wizard on tab switch ──────────────────────── */
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.dataset.tab === 'wizard'){
+      buildSidebar();
+      updateWizDataBar();
+    }
+  });
+});
+// Initial build – deferred to ensure DOM is ready
+setTimeout(buildSidebar, 0);
+
+/* ── showStatus helper ────────────────────────────────────── */
+function showStatus(type, msg){
+  const el = document.getElementById('uploadStatus');
+  el.className = 'upload-status ' + type;
+  el.textContent = msg;
+}
+</script>
+
+</body>
+</html>
