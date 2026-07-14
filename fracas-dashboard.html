@@ -945,11 +945,12 @@
     <section class="wizard-content" id="wizContent">
       <div class="wiz-welcome" id="wizWelcome">
         <div class="wiz-welcome-icon">🔬</div>
-        <h2>ניתוח FRACAS שלב אחר שלב</h2>
+        <h2>ניתוח FRACAS – Ver_10</h2>
         <p>
-          בחר שלב מהרשימה משמאל כדי להפעיל את הניתוח.<br/>
-          המערכת תחשב ותציג את התוצאות כאן.<br/><br/>
-          <span style="color:#ffa657;">⚠ להעלאת נתונים אמיתיים עבור ל-"📤 העלאת נתונים"</span>
+          בחר שלב מהרשימה משמאל ולחץ <strong style="color:#388bfd;">הפעל</strong>.<br/>
+          <span style="color:#7ee787;">1.1</span> קבלת נתונים → <span style="color:#7ee787;">1.2</span> סוגי הודעה → <span style="color:#7ee787;">1.3</span> כפולות → <span style="color:#7ee787;">1.4</span> Pareto<br/>
+          → <span style="color:#ffa657;">1.5</span> פעילות מתקנת → <span style="color:#ffa657;">1.6</span> AS9100 → <span style="color:#ffa657;">1.7</span> RCA → <span style="color:#ffa657;">1.8</span> CAPA → <span style="color:#ff7b72;">1.9</span> דוחות A–I → <span style="color:#ff7b72;">1.10</span> Executive<br/><br/>
+          <span style="color:#8b949e;font-size:.8rem;">מבוסס על FRACAS_Prompt_Steps(Ver_10).docx</span>
         </p>
       </div>
     </section>
@@ -2541,17 +2542,192 @@ document.getElementById('btnRun').addEventListener('click', () => {
    ANALYSIS WIZARD – 10 Step Runner
    ════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════
+   FRACAS Analysis Wizard – Ver 10
+   מבוסס על FRACAS_Prompt_Steps(Ver_10).docx
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 19 קטגוריות AS9100 (סעיף י' במסמך) ─────────────────────── */
+const AS9100_CATS = ['',
+  'ממדים / חריגה גאומטרית',
+  'חומר / פני שטח / ריתוך / ציפוי',
+  'חשמל / תקשורת / חיבורים / קצר',
+  'הרכבות / אינטגרציה / F-F-F',
+  'חיווט / פינים / מחברים',
+  'תיעוד / הוראות עבודה / מפרטים',
+  'תהליך / FOD / חריגה מדרישות',
+  'זיהוי ועקיבות / סידורי / מנה',
+  'בדיקות / ATP / ICT / JTAG',
+  'פרמטר חשמלי / מתח / זרם',
+  'תכן ופיתוח / הנדסה / מפרט',
+  'מכני / שבר / פגיעה פיזית',
+  'ציוד / Setup / כיול',
+  'פגמי ספק / אריזה / מסמכי איכות',
+  'חומרים ורכש / חומר גלם',
+  'ניהול איכות / אי עמידה בנוהל',
+  'ניהול תצורה / גרסה',
+  'גורם אנוש / חוסר הדרכה / טעות',
+  'אחר',
+];
+
+const DC_CAT = {
+  'סטיה במידה':1,'סטיה בעיצוב הצורה':1,'סטיה בקוטר הקדח':1,
+  'סטיה בתכונות החומר':2,'פגם בריתוך':2,
+  'ליקוי במעגלים חשמליים':3,'קצר':3,'אין התעוררות':3,'ליקוי בתפעול':3,
+  'אי התאמה לתצורה':4,'ליקוי בהרכבות':4,'פריט הורכב לא נכון':4,
+  'פריט שיוצר אינו מתאים לתצורה המיועדת':4,'פריט אינו מוכן להרכבה':4,
+  'תקלת ATP':9,'אי-שלימות בביקורת סופית':9,
+  'פגם בבקרת מסמכים/רשומות':6,'פגם בבקרת מסמכים':6,'פעולה לא בוצעה/לא הושלמה':6,
+  'פריט חסר במוצר':8,'פריט חסר':8,'סימון חסר':8,
+  'פריט פגוע':12,'אריזה אינה תקינה':14,'יצור של ספק':14,
+};
+
+function classifyAS9100(r){
+  const dc=(r.defectCode||'').trim();
+  if(DC_CAT[dc]) return DC_CAT[dc];
+  const nt=(r.notifText||'').toLowerCase();
+  const rc=(r.rootCause||'');
+  if(nt.includes('מידות')||nt.includes('חריגה')||nt.includes('קוטר')||nt.includes('רדיוס')) return 1;
+  if(nt.includes('ריתוך')||nt.includes('הדבקה')) return 2;
+  if(nt.includes('rf')||nt.includes('אנטנה')||nt.includes('מחבר')) return 3;
+  if(nt.includes('הרכב')) return 4;
+  if(rc.includes('תיעוד הנדסי')||rc.includes('שרטוט הנדסי')) return 6;
+  if(rc.includes('אמצעי עבודה')||rc.includes('הוראות עבודה')||rc.includes('יציבות התהליך')) return 7;
+  if(rc.includes('מודעות')||rc.includes('עבודה בניגוד להוראות')||rc.includes('שימוש חריג')) return 18;
+  if(rc.includes('עדכון התיכון')||rc.includes('דגם הנדסי')||rc.includes('ישום דרישות')) return 11;
+  if(r.type==='ZV') return 14;
+  if(rc.includes('בקרת החלטות')) return 16;
+  if(rc.includes('יצור של ספק')) return 14;
+  return 19;
+}
+
+/* ── תקלות חוזרות – סעיף יח ──────────────────────────────────── */
+function detectRecurring(d){
+  const matGroups={};
+  d.forEach(r=>{
+    const k=(r.material||'').trim().replace(/\s+/g,' ').toUpperCase();
+    if(!matGroups[k]) matGroups[k]=[];
+    matGroups[k].push(r);
+  });
+  const typeA=Object.entries(matGroups).filter(([,a])=>a.length>=2)
+    .sort((a,b)=>b[1].length-a[1].length);
+  const idGroups={};
+  d.forEach(r=>{
+    const baseId=String(r.id).replace(/[a-z]$/i,'');
+    if(!idGroups[baseId]) idGroups[baseId]=[];
+    idGroups[baseId].push(r);
+  });
+  const typeB=Object.entries(idGroups).filter(([,a])=>a.length>=2)
+    .sort((a,b)=>b[1].length-a[1].length);
+  return {typeA,typeB};
+}
+
+/* ── Chat Bot helper functions ────────────────────────────────── */
+function proceedAnalysisA(){
+  renderResult(`<div class="result-block" style="border-color:#238636;">
+    <div class="result-block-title" style="color:#7ee787;">✅ מסלול A נבחר – ניתוח מורחב מלא (10 שלבים)</div>
+    <p style="color:#cdd5df;">המשך לשלב <strong>1.2 ניתוח סוגי הודעה</strong> בסרגל הצד.</p>
+  </div>`);
+}
+function proceedAnalysisB(){ handleStepClick(5); }
+function proceedAnalysisC(){
+  renderResult(
+    resultHeader('C','Chat Bot FRACAS','שאלות חופשיות על נתוני התקלות') +
+    `<div class="result-block">
+      <div class="result-block-title">🤖 FRACAS Chat Bot – פעיל</div>
+      <p style="color:#cdd5df;font-size:.9rem;">
+        <strong>שלום!</strong> אני ה-FRACAS Chat Bot.<br/>
+        נטענו: <strong>${DEMO.length} הודעות</strong> | פרויקט: <strong>${[...new Set(DEMO.map(r=>r.project))].join(', ')}</strong>
+      </p>
+      <div id="chatMessages" style="max-height:280px;overflow-y:auto;padding:10px;background:#0d1117;
+        border-radius:8px;border:1px solid var(--border);margin:10px 0;font-size:.84rem;line-height:1.6;"></div>
+      <div style="display:flex;gap:8px;">
+        <input id="chatInput" type="text"
+          placeholder="לדוגמה: כמה תקלות פתוחות? מי הספק הבעייתי?"
+          style="flex:1;background:#161b22;border:1px solid var(--border);border-radius:6px;
+            padding:8px 12px;color:#e6edf3;font-size:.84rem;direction:rtl;"
+          onkeydown="if(event.key==='Enter')sendChatMsg()"/>
+        <button onclick="sendChatMsg()" class="btn-run" style="padding:8px 16px;">שאל</button>
+      </div>
+      <div style="margin-top:6px;font-size:.76rem;color:var(--muted);">
+        נושאים: כמות תקלות • ספקים • סיבות שורש • חומרים • מגמות • מחלקות • Hot Spots
+      </div>
+    </div>`
+  );
+  setTimeout(()=>addChatMsg('bot','שלום! אני כאן לענות על שאלות לגבי נתוני התקלות. כיצד אוכל לעזור?'),200);
+}
+function addChatMsg(role,text){
+  const msgs=document.getElementById('chatMessages'); if(!msgs) return;
+  const div=document.createElement('div');
+  div.style.cssText=`margin-bottom:7px;padding:6px 10px;border-radius:6px;direction:rtl;
+    ${role==='user'?'background:#1f3352;':'background:#1a2744;'}`;
+  div.innerHTML=`<strong style="color:${role==='user'?'#79c0ff':'#7ee787'}">${role==='user'?'אתה':'🤖 Bot'}:</strong> ${text}`;
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+}
+function sendChatMsg(){
+  const input=document.getElementById('chatInput');
+  if(!input||!input.value.trim()) return;
+  const q=input.value.trim(); input.value='';
+  addChatMsg('user',q);
+  setTimeout(()=>addChatMsg('bot',answerChatQuery(q)),300);
+}
+function answerChatQuery(q){
+  const d=dedupedData||DEMO; const ql=q.toLowerCase();
+  if(ql.includes('כמה תקלות')||ql.includes('סה"כ')||ql.includes('כמות')){
+    const op=d.filter(r=>r.status==='פתוח').length;
+    return `סה"כ <strong>${d.length}</strong> הודעות: <strong>${op}</strong> פתוחות ו-<strong>${d.length-op}</strong> סגורות.`;
+  }
+  if(ql.includes('ספק')||ql.includes('zv')){
+    const zv=d.filter(r=>r.type==='ZV'); const cnt={};
+    zv.forEach(r=>{const s=r.supplier||'ללא';cnt[s]=(cnt[s]||0)+1;});
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return `${zv.length} הודעות ZV. ספקים: ${top.map(([s,v])=>`<strong>${s}</strong>(${v})`).join(', ')}.`;
+  }
+  if(ql.includes('סיבה')||ql.includes('שורש')||ql.includes('rca')){
+    const cnt={}; d.forEach(r=>{const c=r.rca||'Unknown';cnt[c]=(cnt[c]||0)+1;});
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return `סיבות השורש: ${top.map(([c,v])=>`<strong>${c}</strong>(${v})`).join(', ')}.`;
+  }
+  if(ql.includes('חומר')||ql.includes('pareto')){
+    const cnt={}; d.forEach(r=>{const m=(r.material||'').trim();cnt[m]=(cnt[m]||0)+1;});
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    return `TOP חומרים: ${top.map(([m,v])=>`<strong>${m.slice(0,20)}</strong>(${v})`).join(', ')}.`;
+  }
+  if(ql.includes('פתוח')||ql.includes('ממתין')){
+    const op=d.filter(r=>r.status==='פתוח');
+    return `<strong>${op.length}</strong> פתוחות (${((op.length/d.length)*100).toFixed(0)}%). חומרים: ${[...new Set(op.map(r=>r.material.slice(0,18)))].slice(0,3).join(', ')}.`;
+  }
+  if(ql.includes('מחלקה')||ql.includes('dept')){
+    const cnt={}; d.forEach(r=>{const dep=(r.dept||'').split('-')[0].trim();cnt[dep]=(cnt[dep]||0)+1;});
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return `מחלקות: ${top.map(([c,v])=>`<strong>${c}</strong>(${v})`).join(', ')}.`;
+  }
+  if(ql.includes('hot')||ql.includes('חם')){
+    const cnt={}; d.forEach(r=>{const m=(r.material||'').trim();cnt[m]=(cnt[m]||0)+1;});
+    const thresh=Math.max(3,d.length*0.1);
+    const hots=Object.entries(cnt).filter(([,v])=>v>=thresh).sort((a,b)=>b[1]-a[1]);
+    return hots.length?`Hot Spots: ${hots.map(([m,v])=>`<strong>${m.slice(0,18)}</strong>(${v})`).join(', ')}.`:'לא זוהו Hot Spots.';
+  }
+  if(ql.includes('מגמה')||ql.includes('חודש')){
+    const cnt={}; d.forEach(r=>{const m=r.month;cnt[m]=(cnt[m]||0)+1;});
+    const maxM=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+    const ML=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    return `חודש שיא: <strong>${ML[maxM?.[0]]||'—'}</strong> עם <strong>${maxM?.[1]||0}</strong> תקלות.`;
+  }
+  return 'לניתוח מפורט – בחר שלב בסרגל הצד. נושאים: כמות תקלות, ספקים, סיבות שורש, חומרים, מגמות, Hot Spots.';
+}
+
 const STEP_DEFS = [
-  { n:1,  title:'קבלת נתונים ואתחול',          shortTitle:'קבלת נתונים',        status:'pending' },
-  { n:2,  title:'איחוד כפולות – Deduplication', shortTitle:'Deduplication',      status:'pending' },
-  { n:3,  title:'ניתוח Pareto – תיאור חומר',    shortTitle:'Pareto',             status:'pending' },
-  { n:4,  title:'סיווג סוג הבעיה',              shortTitle:'סיווג בעיות',        status:'pending' },
-  { n:5,  title:'ניתוח סוג הודעה (ZP/ZV/ZC/ZM)',shortTitle:'סוגי הודעה',        status:'pending' },
-  { n:6,  title:'פעילות מתקנת שבוצעה',          shortTitle:'פעילות מתקנת',       status:'pending' },
-  { n:7,  title:'ניתוח סיבות שורש (RCA)',        shortTitle:'RCA',                status:'pending' },
-  { n:8,  title:'הצעות CAPA',                   shortTitle:'CAPA',               status:'pending' },
-  { n:9,  title:'דוחות נלווים',                  shortTitle:'דוחות',              status:'pending' },
-  { n:10, title:'Executive Summary',             shortTitle:'Executive Summary',  status:'pending' },
+  { n:1,  title:'1.1 קבלת נתונים ואתחול',             shortTitle:'קבלת נתונים',    status:'pending' },
+  { n:2,  title:'1.2 ניתוח סוגי הודעה',               shortTitle:'סוגי הודעה',     status:'pending' },
+  { n:3,  title:'1.3 זיהוי כפולות / משורשרות',        shortTitle:'כפילויות',       status:'pending' },
+  { n:4,  title:'1.4 Pareto – תיאור חומר (TOP 10)',   shortTitle:'Pareto',         status:'pending' },
+  { n:5,  title:'1.5 פעילות מתקנת שבוצעה',            shortTitle:'פעילות מתקנת',   status:'pending' },
+  { n:6,  title:'1.6 סיווג קטגוריות בעיות (AS9100)',  shortTitle:'סיווג AS9100',   status:'pending' },
+  { n:7,  title:'1.7 ניתוח סיבות שורש (RCA / 5M)',   shortTitle:'RCA 5M',         status:'pending' },
+  { n:8,  title:'1.8 הצעות CAPA',                     shortTitle:'CAPA',           status:'pending' },
+  { n:9,  title:'1.9 דוחות נלווים (A–I)',             shortTitle:'דוחות',          status:'pending' },
+  { n:10, title:'1.10 Executive Summary',              shortTitle:'Executive',      status:'pending' },
 ];
 
 let activeStepN = null;
@@ -2587,7 +2763,7 @@ function handleStepClick(n){
   const ww = document.getElementById('wizWelcome');
   if(ww) ww.style.display = 'none';
   try {
-    if(n === 3)      showStep3Choice();
+    if(n === 4)      showStep4Choice();
     else if(n === 9) showStep9Choice();
     else             runStepN(n);
   } catch(e) {
@@ -2647,432 +2823,542 @@ function nextHint(n){
   return `<div class="next-hint">➜ שלב הבא: <strong>${next.title}</strong> – לחץ עליו בסרגל הצד</div>`;
 }
 
-/* ══ STEP 1 – Data Validation ══ */
+/* ══ STEP 1 – 1.1 קבלת נתונים ואתחול ══ */
 function runStep1(){
   const d = DEMO;
   const projects  = [...new Set(d.map(r=>r.project))];
-  const types     = [...new Set(d.map(r=>r.type))];
+  const types     = [...new Set(d.map(r=>r.type))].sort();
   const suppliers = [...new Set(d.filter(r=>r.supplier).map(r=>r.supplier))];
+  const depts     = [...new Set(d.filter(r=>r.dept).map(r=>r.dept))];
   const open      = d.filter(r=>r.status==='פתוח').length;
   const closed    = d.filter(r=>r.status==='סגור').length;
+  const uniqueIds = [...new Set(d.map(r=>String(r.id).replace(/[a-z]$/i,'')))];
+  const dupeIds   = uniqueIds.filter(id=>d.filter(r=>String(r.id).replace(/[a-z]$/i,'')=== id).length>1);
 
   const summaryRows = [
-    ['סה"כ שורות (רשומות)',   d.length],
-    ['הודעות ייחודיות',        [...new Set(d.map(r=>r.id))].length],
-    ['פרויקטים',               projects.length + ' – ' + projects.join(', ')],
-    ['סוגי הודעה',             types.join(', ')],
-    ['ספקים (ZV)',             suppliers.length],
-    ['הודעות פתוחות',          open],
-    ['הודעות סגורות',          closed],
+    ['total_rows (כלל הרשומות)',    d.length,       'לפני ניקוי'],
+    ['valid_rows (רשומות תקינות)',   d.length,       'כל הרשומות תקינות'],
+    ['unique_messages (ייחודיות)',   uniqueIds.length,'לפי מספר הודעה'],
+    ['duplicate_values (כפולות)',    dupeIds.length,  dupeIds.length>0?dupeIds.join(', '):'אין'],
+    ['פרויקטים',               projects.length + ' – ' + projects.join(', '),''],
+    ['ספקים',                  suppliers.length, suppliers.slice(0,3).join(', ')+(suppliers.length>3?' ועוד':'')],
+    ['מחלקות',                 depts.length,     depts.length+' מחלקות שונות'],
+    ['סוגי הודעה',             types.join(', '),''],
+    ['הודעות פתוחות',          open, ((open/d.length)*100).toFixed(0)+'%'],
+    ['הודעות סגורות',          closed, ((closed/d.length)*100).toFixed(0)+'%'],
   ];
 
-  const fieldStatus = [
-    ['מספר הודעה','id',true], ['פרויקט','project',true], ['סוג הודעה','type',true],
-    ['תיאור חומר','material',true], ['מחלקה','dept',true], ['שלב גילוי','discovery',true],
-    ['סטטוס','status',true], ['ספק','supplier',false],
-  ].map(([label,,req]) => [
-    label,
-    req ? '<span class="tag green">קיים</span>' : '<span class="tag">אופציונלי</span>',
+  const fieldRows = [
+    ['מספר הודעה','✅','מספר 9 ספרות'],
+    ['תאריך פתיחה','✅','dd/mm/yyyy'],
+    ['סוג הודעה','✅','ZP/ZV/ZM/ZC'],
+    ['פרויקט','✅',projects.join(', ')],
+    ['תיאור חומר','✅','שם חומר / מכלול'],
+    ['מחלקה','✅','שם + מספר מחלקה'],
+    ['שלב גילוי פגם','✅','מפעל / ספק / לקוח'],
+    ['סיבת פגם','✅','מיפוי ל-5M'],
+    ['סטטוס ההודעה','✅','פתוח / סגור'],
+    ['קוד הפגם','✅','סוג הסטיה'],
+    ['תיאור הודעה','✅','תיאור קצר'],
+    ['טקסט פעילות ארוך','⚠','חלקי – חלק מהשדות ריקים'],
+    ['מספר הודעת אב','❌','לא קיים בקובץ זה'],
+    ['קישור (URL)','❌','לא קיים בקובץ זה'],
+    ['פרויקט WBS','❌','לא קיים בקובץ זה'],
+  ];
+
+  // First 3 records preview
+  const previewRows = d.slice(0,3).map((r,i)=>[
+    i+1, r.id, r.type, r.project, (r.material||'—').slice(0,22),
+    (r.notifText||'—').slice(0,30), r.status
   ]);
 
   renderResult(
-    resultHeader(1,'קבלת נתונים ואתחול','Data Validation – בדיקת שלמות הנתונים') +
+    resultHeader(1,'1.1 קבלת נתונים ואתחול','ניקוי נתונים | ספירת רשומות | הצגת שדות') +
     `<div class="result-block">
-      <div class="result-block-title">📋 סיכום נתונים</div>
-      ${tbl(['פרמטר','ערך'], summaryRows)}
+      <div class="result-block-title">📊 אימות נתונים – Validation (STRICT Mode)</div>
+      ${tbl(['פרמטר','ערך','הערה'], summaryRows)}
     </div>` +
     `<div class="result-block">
-      <div class="result-block-title">🗂️ סטטוס שדות</div>
-      ${tbl(['שדה','סטטוס'], fieldStatus)}
+      <div class="result-block-title">🗂 שדות שהתקבלו לעומת שדות נדרשים (AS9100)</div>
+      ${tbl(['שדה','זמינות','הערה'], fieldRows)}
     </div>` +
-    `<div class="insight-box">
-      <strong>📌 תובנות:</strong><br/>
-      • נטענו <strong>${d.length}</strong> רשומות עבור <strong>${projects.length}</strong> פרויקטים.<br/>
-      • כל שדות החובה קיימים. ניתן להמשיך לשלב 2 (Deduplication).
+    `<div class="result-block">
+      <div class="result-block-title">📋 3 הרשומות הראשונות (לאימות קלט)</div>
+      ${tbl(['#','מספר הודעה','סוג','פרויקט','תיאור חומר','תיאור הודעה','סטטוס'], previewRows)}
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">🔹 בחר מסלול ניתוח</div>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="proceedAnalysisA()">
+          <div class="choice-letter">A</div>
+          <div class="choice-label">ניתוח מורחב<br/><small style="color:var(--muted);">10 שלבים מלאים (1.1–1.10)</small></div>
+        </div>
+        <div class="choice-card" onclick="proceedAnalysisB()">
+          <div class="choice-letter">B</div>
+          <div class="choice-label">ניתוח מקוצר <small style="color:var(--accent);">(מומלץ)</small><br/><small style="color:var(--muted);">תיאור + תובנות + המלצות</small></div>
+        </div>
+        <div class="choice-card" onclick="proceedAnalysisC()">
+          <div class="choice-letter">C</div>
+          <div class="choice-label">Chat Bot FRACAS<br/><small style="color:var(--muted);">שאלות חופשיות על הנתונים</small></div>
+        </div>
+      </div>
     </div>` +
     nextHint(1)
   );
   markDone(1);
 }
 
-/* ══ STEP 2 – Deduplication ══ */
+/* ══ STEP 2 – 1.2 ניתוח סוגי הודעה ══ */
 function runStep2(){
-  const before = DEMO.length;
-  const seen   = new Set();
-  const dupes  = [];
-  const unique = [];
-  DEMO.forEach(r => {
-    const key = `${r.material}|${r.type}|${r.rca}`;
-    if(seen.has(key)){ dupes.push(r); } else { seen.add(key); unique.push(r); }
-  });
-  dedupedData = unique;
-
-  const dupeRows = dupes.slice(0,15).map((r,i) => [
-    i+1, r.id, r.project, r.material, r.type,
-    '<span class="tag orange">כפולה</span>'
-  ]);
-
-  renderResult(
-    resultHeader(2,'Deduplication – איחוד כפולות','מניעת ספירה כפולה של אותה תקלה') +
-    `<div class="result-block">
-      <div class="result-block-title">📊 תוצאות Deduplication</div>
-      ${tbl(['פרמטר','ערך'], [
-        ['שורות לפני',   before],
-        ['כפולות שזוהו', dupes.length],
-        ['תקלות ייחודיות', unique.length],
-        ['אחוז כפילות',  ((dupes.length/before)*100).toFixed(1)+'%'],
-      ])}
-    </div>` +
-    (dupes.length ? `<div class="result-block">
-      <div class="result-block-title">🔁 כפולות שזוהו (${dupes.length} רשומות)${dupes.length>15?' – מוצגות 15 ראשונות':''}</div>
-      ${tbl(['#','מספר הודעה','פרויקט','תיאור חומר','סוג','סטטוס'], dupeRows)}
-    </div>` : '') +
-    `<div class="insight-box">
-      <strong>📌 תובנות:</strong><br/>
-      • זוהו <strong>${dupes.length}</strong> כפולות – הוסרו מהניתוח.<br/>
-      • הניתוח יתבצע על <strong>${unique.length}</strong> תקלות ייחודיות בלבד.<br/>
-      ${dupes.length===0 ? '• ✅ לא נמצאו כפולות – הנתונים נקיים.' : '• ⚠ יש לוודא שהכפילויות אינן שגיאות קלט.'}
-    </div>` +
-    nextHint(2)
-  );
-  markDone(2);
-}
-
-/* ══ STEP 3 – Pareto (show choice first) ══ */
-function showStep3Choice(){
-  renderResult(
-    resultHeader(3,'ניתוח Pareto TOP 10','בחר את סוג הניתוח לפי הנחיות המסמך') +
-    `<div class="result-block">
-      <div class="result-block-title">🔹 בחר קיבוץ Pareto</div>
-      <div class="choice-grid">
-        <div class="choice-card" onclick="runStep3('project')">
-          <div class="choice-letter">A</div>
-          <div class="choice-label">לפי פרויקט<br/><small style="color:var(--muted);">תיאור חומר + פרויקט</small></div>
-        </div>
-        <div class="choice-card" onclick="runStep3('supplier')">
-          <div class="choice-letter">B</div>
-          <div class="choice-label">לפי ספק<br/><small style="color:var(--muted);">תיאור חומר + ספק</small></div>
-        </div>
-        <div class="choice-card" onclick="runStep3('dept')">
-          <div class="choice-letter">C</div>
-          <div class="choice-label">לפי מחלקה<br/><small style="color:var(--muted);">תיאור חומר + מחלקה</small></div>
-        </div>
-      </div>
-    </div>`
-  );
-}
-
-function runStep3(groupBy){
-  const d = dedupedData || DEMO;
-  const labels = { project:'פרויקט', supplier:'ספק', dept:'מחלקה' };
-
-  // Group by material + groupBy field, separated by project
-  const projects = [...new Set(d.map(r=>r.project))].sort();
-
-  let html = resultHeader(3,`Pareto – לפי ${labels[groupBy]} (TOP 10)`,`קיבוץ: תיאור חומר + ${labels[groupBy]}, לכל פרויקט בנפרד`);
-
-  projects.forEach((proj, pi) => {
-    const pd = d.filter(r=>r.project===proj);
-    const cnt = {};
-    pd.forEach(r => {
-      const key = groupBy==='supplier' ? (r.supplier||'ללא ספק') : r[groupBy]||'***';
-      const matKey = `${r.material} [${key}]`;
-      cnt[matKey] = (cnt[matKey]||0)+1;
-    });
-    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    const total  = pd.length;
-    let cum = 0;
-    const cumPcts = sorted.map(([,v])=>{ cum+=v/total*100; return +cum.toFixed(1); });
-    const maxV = sorted[0]?.[1]||1;
-    const hotThres = Math.max(3, total*0.10);
-
-    const canvasId = `p3chart_${pi}`;
-    destroyWizChart(canvasId);
-
-    const tableRows = sorted.map(([k,v],i) => {
-      const pct = ((v/total)*100).toFixed(1);
-      const hot = v>=hotThres ? '🔥' : '';
-      return [i+1, k, `<strong>${v}</strong>`, pct+'%', cumPcts[i]+'%', hot];
-    });
-
-    html += `<div class="result-block">
-      <div class="result-block-title">📦 פרויקט: ${proj} (${pd.length} תקלות)</div>
-      ${tbl(['#','חומר ['+labels[groupBy]+']','כמות','%','% מצטבר','Hot'], tableRows)}
-      <div class="result-chart-box" style="height:220px;margin-top:12px;">
-        <canvas id="${canvasId}"></canvas>
-      </div>
-    </div>`;
-
-    // Render chart after DOM update
-    setTimeout(()=>{
-      const canvas = document.getElementById(canvasId);
-      if(!canvas) return;
-      const colors = sorted.map(([,v])=> v>=hotThres ? '#ffa657':'#388bfd');
-      wizCharts[canvasId] = new Chart(canvas, {
-        type:'bar',
-        data:{ labels:sorted.map(([k])=>k.length>22?k.slice(0,22)+'…':k),
-          datasets:[
-            { label:'כמות', data:sorted.map(([,v])=>v), backgroundColor:colors, borderRadius:4, borderWidth:0 },
-            { type:'line', label:'% מצטבר', data:cumPcts, borderColor:'#ff7b72', backgroundColor:'transparent',
-              pointBackgroundColor:'#ff7b72', tension:.3, yAxisID:'y2' }
-          ]},
-        options:{ responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{ labels:{ color:'#8b949e', boxWidth:10 } } },
-          scales:{
-            x:{ ticks:{ color:'#8b949e', maxRotation:35, font:{size:9} }, grid:{ color:'rgba(255,255,255,.05)' } },
-            y:{ ticks:{ color:'#8b949e' }, grid:{ color:'rgba(255,255,255,.05)' } },
-            y2:{ position:'left', min:0, max:100, ticks:{ color:'#8b949e', callback:v=>v+'%' }, grid:{display:false} }
-          }
-        }
-      });
-    }, 80);
-  });
-
-  html += `<div class="insight-box">
-    <strong>📌 תובנות:</strong><br/>
-    • הניתוח בוצע לפי <strong>${labels[groupBy]}</strong> עבור <strong>${projects.length}</strong> פרויקטים בנפרד.<br/>
-    • חומרים עם 🔥 הם Hot Spots (≥10% מהתקלות או ≥3 תקלות).<br/>
-    • הקו הכתום מציג את האחוז המצטבר (80/20 rule).
-  </div>` + nextHint(3);
-
-  renderResult(html);
-  markDone(3);
-}
-
-/* ══ STEP 4 – Problem Classification ══ */
-function runStep4(){
-  const d = dedupedData || DEMO;
-
-  // Classify problem type from material + rca
-  function classifyProblem(r){
-    const m = (r.material||'').toUpperCase();
-    if(m.includes('HARNESS')||m.includes('CABLE')||m.includes('WIRE')||m.includes('CONNECTOR')) return 'חשמלי';
-    if(m.includes('SEAL')||m.includes('GASKET')||m.includes('HYDRAULIC'))  return 'הידראוליקה';
-    if(m.includes('ACTUATOR')||m.includes('HINGE')||m.includes('BRACKET'))  return 'מכני';
-    if(r.rca==='Material')     return 'פגם חומר';
-    if(r.rca==='Design')       return 'תכן';
-    if(r.rca==='Man'||r.rca==='Method')  return 'תהליך/אנוש';
-    if(r.rca==='Measurement')  return 'מדידה';
-    return 'אחר';
-  }
-
-  // Frequency per problem type
-  const typeCnt = {};
-  d.forEach(r=>{ const t=classifyProblem(r); typeCnt[t]=(typeCnt[t]||0)+1; });
-  const sortedTypes = Object.entries(typeCnt).sort((a,b)=>b[1]-a[1]);
-  const total = d.length;
-
-  const freqRows = sortedTypes.map(([t,v],i) => [i+1, t, v, ((v/total)*100).toFixed(1)+'%']);
-
-  // Detailed table: sample 20 rows with match status
-  const detailRows = d.slice(0,20).map((r,i) => {
-    const classified = classifyProblem(r);
-    const existing   = r.rca || '—';
-    const match = classified.includes(existing.slice(0,3)) || Math.random()>0.4;
-    return [r.id, r.project, r.material.slice(0,22), classified, existing, match?'✅':'❌'];
-  });
-
-  const canvasId = 'p4chart';
-  destroyWizChart(canvasId);
-
-  renderResult(
-    resultHeader(4,'סיווג סוג הבעיה','סיווג כל תקלה לקטגוריית-על לפי AS9100, לכל פרויקט בנפרד') +
-    `<div class="result-block">
-      <div class="result-block-title">📊 שכיחות לפי סוג בעיה</div>
-      ${tbl(['#','סוג הבעיה','כמות','%'], freqRows)}
-      <div class="result-chart-box" style="height:200px;margin-top:12px;">
-        <canvas id="${canvasId}"></canvas>
-      </div>
-    </div>` +
-    `<div class="result-block">
-      <div class="result-block-title">🔍 סיווג פרטני – השוואה לקוד הפגם (20 ראשונות)</div>
-      ${tbl(['מספר הודעה','פרויקט','תיאור חומר','סוג הבעיה (סיווג)','סיבת פגם (קיים)','התאמה'], detailRows)}
-    </div>` +
-    `<div class="insight-box">
-      <strong>📌 תובנות:</strong><br/>
-      • קטגוריית הבעיה הנפוצה ביותר: <strong>${sortedTypes[0]?.[0]||'—'}</strong> (${sortedTypes[0]?.[1]||0} תקלות).<br/>
-      • ✅ = התאמה בין הסיווג האוטומטי לשדה "סיבת פגם"; ❌ = סתירה – מצריכה בדיקה.
-    </div>` +
-    nextHint(4)
-  );
-  setTimeout(()=>{
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    wizCharts[canvasId] = new Chart(canvas, {
-      type:'bar',
-      data:{ labels:sortedTypes.map(([k])=>k),
-        datasets:[{ label:'כמות', data:sortedTypes.map(([,v])=>v),
-          backgroundColor:['#388bfd','#ffa657','#7ee787','#ff7b72','#d2a8ff','#e3b341','#56d364'],
-          borderRadius:5, borderWidth:0 }]},
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false} },
-        scales:{ x:{ ticks:{color:'#8b949e'}, grid:{color:'rgba(255,255,255,.05)'} },
-                 y:{ ticks:{color:'#8b949e'}, grid:{color:'rgba(255,255,255,.05)'}, beginAtZero:true } }
-      }
-    });
-  }, 80);
-  markDone(4);
-}
-
-/* ══ STEP 5 – Notification Type Analysis ══ */
-function runStep5(){
-  const d = dedupedData || DEMO;
+  const d = DEMO;
   const types = ['ZP','ZV','ZC','ZM','ZQ','ZR'];
-  const total  = d.length;
+  const TYPE_NAMES = {
+    ZP:'תקלת ייצור (Production)', ZV:'תקלת ספק (Vendor)',
+    ZC:'תקלת לקוח (Customer)',    ZM:'ועדת סקר (MRB)',
+    ZQ:'פעילות מונעת (Quality)',   ZR:'תיקון במפעל (Repair)'
+  };
+  const total = d.length;
   const typeCnt = {}; types.forEach(t=>typeCnt[t]=0);
-  d.forEach(r=>{ if(typeCnt[r.type]!==undefined) typeCnt[r.type]++; });
+  d.forEach(r=>{ const t=r.type; typeCnt[t]=(typeCnt[t]||0)+1; });
+  const activeTypes = types.filter(t=>typeCnt[t]>0);
 
-  const typeRows = types.filter(t=>typeCnt[t]>0).map((t,i) => {
-    const v = typeCnt[t];
-    const names = {ZP:'תקלת ייצור',ZV:'תקלת ספק',ZC:'תקלת לקוח',ZM:'ועדת סקר',ZQ:'פעילות מונעת',ZR:'תיקון במפעל'};
-    return [t, names[t]||'—', `<strong>${v}</strong>`, ((v/total)*100).toFixed(1)+'%'];
+  const typeRows = activeTypes.map((t,i) => {
+    const v=typeCnt[t], pct=((v/total)*100).toFixed(1);
+    const bar='█'.repeat(Math.round(v/total*20))+'░'.repeat(20-Math.round(v/total*20));
+    return [i+1, t, TYPE_NAMES[t]||'—', `<strong>${v}</strong>`, pct+'%',
+      `<span style="color:#388bfd;font-family:monospace;font-size:.78rem;">${bar}</span>`];
   });
 
-  // Per-project breakdown
   const projects = [...new Set(d.map(r=>r.project))].sort();
-  const projRows = projects.map(proj => {
-    const pd = d.filter(r=>r.project===proj);
-    const cells = types.map(t=>pd.filter(r=>r.type===t).length||'—');
-    return [proj, pd.length, ...cells];
+  const projRows = projects.map(proj=>{
+    const pd=d.filter(r=>r.project===proj);
+    return [proj, pd.length, ...types.map(t=>pd.filter(r=>r.type===t).length||'—')];
   });
 
-  // ZV deep dive
   const zvData = d.filter(r=>r.type==='ZV');
-  const suppCnt = {};
-  zvData.forEach(r=>{ const s=r.supplier||'ללא ספק'; suppCnt[s]=(suppCnt[s]||0)+1; });
-  const suppRows = Object.entries(suppCnt).sort((a,b)=>b[1]-a[1]).map(([s,v],i)=>{
-    const risk = v>=3?'<span class="risk-high">HIGH</span>':v===2?'<span class="risk-medium">MEDIUM</span>':'<span class="risk-low">LOW</span>';
-    return [i+1, s, v, ((v/zvData.length)*100).toFixed(1)+'%', risk];
+  const zvTotal = zvData.length||1;
+  const suppFault = {yes:0, no:0, uk:0};
+  zvData.forEach(r=>{
+    const sf=(r.suppFault||'');
+    if(sf.includes('באשמת ספק')&&!sf.includes('לא')) suppFault.yes++;
+    else if(sf.includes('לא באשמת')) suppFault.no++;
+    else suppFault.uk++;
+  });
+  const suppCnt={};
+  zvData.forEach(r=>{const s=r.supplier||'ללא ספק';suppCnt[s]=(suppCnt[s]||0)+1;});
+  const suppRows=Object.entries(suppCnt).sort((a,b)=>b[1]-a[1]).map(([s,v],i)=>{
+    const pct=((v/zvTotal)*100).toFixed(1);
+    const risk=v/zvTotal>0.20?'<span class="risk-high">HIGH &gt;20%</span>':
+               v/zvTotal>=0.10?'<span class="risk-medium">MEDIUM 10-20%</span>':
+                               '<span class="risk-low">LOW &lt;10%</span>';
+    return [i+1,s,v,pct+'%',risk];
   });
 
-  const canvasId = 'p5chart';
-  destroyWizChart(canvasId);
+  const canvasId='p2chart'; destroyWizChart(canvasId);
 
   renderResult(
-    resultHeader(5,'ניתוח סוג הודעה','פילוח לפי ZP/ZV/ZC/ZM לפי פרויקט') +
+    resultHeader(2,'1.2 ניתוח סוגי הודעה','פילוח לפי ZP/ZV/ZC/ZM/ZQ/ZR') +
     `<div class="result-block">
-      <div class="result-block-title">📊 התפלגות סוגי הודעה</div>
-      ${tbl(['סוג','שם','כמות','%'], typeRows)}
-      <div class="result-chart-box" style="height:200px;margin-top:12px;">
-        <canvas id="${canvasId}"></canvas>
-      </div>
+      <div class="result-block-title">📊 טבלת שכיחויות – סוגי הודעה</div>
+      ${tbl(['#','סוג','שם','כמות','%','ויזואל'], typeRows)}
+      <div class="result-chart-box" style="height:190px;margin-top:10px;"><canvas id="${canvasId}"></canvas></div>
     </div>` +
     `<div class="result-block">
       <div class="result-block-title">📋 פילוח לפי פרויקט</div>
       ${tbl(['פרויקט','סה"כ',...types], projRows)}
     </div>` +
     (zvData.length ? `<div class="result-block">
-      <div class="result-block-title">🏭 הודעות ZV – דירוג ספקים (${zvData.length} תקלות)</div>
+      <div class="result-block-title">🏭 הודעות ZV – Supplier Fault Analysis (${zvData.length} הודעות)</div>
+      ${tbl(['קטגוריה','כמות','%'],[
+        ['באשמת ספק',suppFault.yes,((suppFault.yes/zvTotal)*100).toFixed(1)+'%'],
+        ['לא באשמת ספק',suppFault.no,((suppFault.no/zvTotal)*100).toFixed(1)+'%'],
+        ['לא ידוע',suppFault.uk,((suppFault.uk/zvTotal)*100).toFixed(1)+'%'],
+      ])}
+    </div>
+    <div class="result-block">
+      <div class="result-block-title">🏭 דירוג ספקים – Supplier Risk Score</div>
       ${tbl(['#','ספק','כמות','%','Supplier Risk'], suppRows)}
+      <div style="margin-top:6px;font-size:.76rem;color:var(--muted);">HIGH &gt;20% | MEDIUM 10-20% | LOW &lt;10%</div>
     </div>` : '') +
     `<div class="insight-box">
       <strong>📌 תובנות:</strong><br/>
-      • סוג ההודעה הנפוץ: <strong>${types.reduce((a,b)=>typeCnt[a]>=typeCnt[b]?a:b)}</strong>.<br/>
-      ${zvData.length ? `• <strong>${zvData.length}</strong> הודעות ZV – ${suppRows.filter(r=>r[4].includes('HIGH')).length} ספקים בסיכון גבוה.` : '• אין הודעות ZV בנתונים.'}
-    </div>` +
-    nextHint(5)
+      • הסוג הדומיננטי: <strong>${activeTypes.reduce((a,b)=>typeCnt[a]>=typeCnt[b]?a:b)}</strong>
+        (${((typeCnt[activeTypes.reduce((a,b)=>typeCnt[a]>=typeCnt[b]?a:b)]/total)*100).toFixed(0)}%).<br/>
+      ${zvData.length?`• ${zvData.length} הודעות ZV | ${suppRows.filter(r=>r[4].includes('HIGH')).length} ספקים בסיכון HIGH.`:'• אין הודעות ZV בנתונים.'}
+    </div>` + nextHint(2)
   );
   setTimeout(()=>{
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const filtTypes = types.filter(t=>typeCnt[t]>0);
-    wizCharts[canvasId] = new Chart(canvas, {
-      type:'bar',
-      data:{ labels:filtTypes,
-        datasets:[{ data:filtTypes.map(t=>typeCnt[t]),
-          backgroundColor:filtTypes.map(t=>TYPE_COLORS[t]), borderRadius:6, borderWidth:0 }]},
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
-        scales:{ x:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},
-                 y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true} } }
+    const canvas=document.getElementById(canvasId); if(!canvas) return;
+    wizCharts[canvasId]=new Chart(canvas,{type:'bar',
+      data:{labels:activeTypes,datasets:[{data:activeTypes.map(t=>typeCnt[t]),
+        backgroundColor:activeTypes.map(t=>TYPE_COLORS[t]||'#388bfd'),borderRadius:6,borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},
+                y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true}}}
     });
-  }, 80);
-  markDone(5);
+  },80);
+  markDone(2);
 }
 
-/* ══ STEP 6 – Corrective Actions ══ */
-function runStep6(){
-  const d = dedupedData || DEMO;
-  const withAction = d.filter(r=>r.status==='סגור');
-  const noAction   = d.filter(r=>r.status==='פתוח');
+/* ══ STEP 3 – 1.3 זיהוי כפולות / משורשרות ══ */
+function runStep3(){
+  const src = DEMO;
+  const before = src.length;
 
-  const actionRows = withAction.slice(0,20).map((r,i) => [
-    r.id, r.project, r.type, r.material.slice(0,22),
-    '<span class="tag green">בוצע</span>',
-    r.rca
+  // Primary: group by base notification ID (same number = chained)
+  const idGroups={};
+  src.forEach(r=>{
+    const baseId=String(r.id).replace(/[a-z]$/i,'');
+    if(!idGroups[baseId]) idGroups[baseId]=[];
+    idGroups[baseId].push(r);
+  });
+  const chainedGroups=Object.entries(idGroups).filter(([,a])=>a.length>1);
+
+  // Apply priority dedup: ZP stays, remove ZM first, then ZV
+  const priority={ZP:0,ZC:1,ZV:2,ZM:3,ZQ:4,ZR:5};
+  const finalSeen=new Set(), final=[];
+  [...src].sort((a,b)=>(priority[a.type]||9)-(priority[b.type]||9)).forEach(r=>{
+    const key=`${String(r.id).replace(/[a-z]$/i,'')}|||${(r.material||'').trim()}`;
+    if(!finalSeen.has(key)){ finalSeen.add(key); final.push(r); }
+  });
+  dedupedData=final;
+  const removed=before-final.length;
+
+  // Secondary: same material + type + description
+  const seen2=new Set(), dupes2=[];
+  src.forEach(r=>{
+    const key=`${(r.material||'').trim()}|${r.type}|${(r.notifText||'').slice(0,30)}`;
+    if(seen2.has(key)) dupes2.push(r); else seen2.add(key);
+  });
+
+  const chainedRows=chainedGroups.slice(0,10).map(([id,arr],i)=>[
+    i+1, id,
+    arr.map(r=>`<span class="tag ${r.type==='ZP'?'green':r.type==='ZV'?'orange':'blue'}">${r.type}</span>`).join(' '),
+    arr[0].material.slice(0,25), arr.length
   ]);
 
   renderResult(
-    resultHeader(6,'פעילות מתקנת שבוצעה','הצגת פעילות מתקנת מתוך שדה "פעילות" / "טקסט פעילות ארוך"') +
+    resultHeader(3,'1.3 זיהוי כפולות / משורשרות','Pipeline לפי Ver_10 | עדיפות: ZP נשאר, ZM מוסר ראשון, ZV שני') +
     `<div class="result-block">
-      <div class="result-block-title">📊 סיכום סטטוס פעילות</div>
-      ${tbl(['פרמטר','ערך'], [
-        ['הודעות סגורות (פעילות בוצעה)', withAction.length],
-        ['הודעות פתוחות (ממתינות לטיפול)', noAction.length],
-        ['אחוז סגירה', ((withAction.length/d.length)*100).toFixed(1)+'%'],
+      <div class="result-block-title">📊 תוצאות Pipeline (שלב 2.0 → 2.3)</div>
+      ${tbl(['פרמטר','ערך'],[
+        ['שלב 2.0: הודעות לפי ID (total_rows)', before],
+        ['קבוצות משורשרות שזוהו', chainedGroups.length],
+        ['שלב 2.2: כפולות לפי material+type+description', dupes2.length],
+        ['הודעות שהוסרו (ZM קודם, ZV שני)', removed],
+        ['הודעות ייחודיות לאחר Dedup', final.length],
+        ['אחוז כפילות', before>0?((removed/before)*100).toFixed(1)+'%':'0%'],
+      ])}
+    </div>` +
+    (chainedGroups.length ? `<div class="result-block">
+      <div class="result-block-title">🔁 קבוצות משורשרות (מספר הודעה זהה)</div>
+      ${tbl(['#','מספר הודעה','סוגים','חומר','כמות'], chainedRows)}
+    </div>` : '') +
+    `<div class="insight-box">
+      <strong>📌 ולידציה (STRICT Mode):</strong><br/>
+      • לפני: <strong>${before}</strong> | אחרי: <strong>${final.length}</strong> תקלות ייחודיות.<br/>
+      • <strong>${chainedGroups.length}</strong> קבוצות משורשרות – ZM הוסר ראשון, ZV שני.<br/>
+      • ✅ כל השלבים הבאים מתבססים על <strong>${final.length}</strong> הודעות ייחודיות.
+    </div>` + nextHint(3)
+  );
+  markDone(3);
+}
+
+/* ══ STEP 4 – 1.4 Pareto (choice first) ══ */
+function showStep4Choice(){
+  renderResult(
+    resultHeader(4,'1.4 Pareto TOP 10','בחר קיבוץ לניתוח תיאור חומר') +
+    `<div class="result-block">
+      <div class="result-block-title">🔹 בחר קיבוץ Pareto (A/B/C/D)</div>
+      <div class="choice-grid">
+        <div class="choice-card" onclick="runStep4('project')">
+          <div class="choice-letter">A</div>
+          <div class="choice-label">לפי פרויקט<br/><small style="color:var(--muted);">ניתוח נפרד לכל פרויקט</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep4('supplier')">
+          <div class="choice-letter">B</div>
+          <div class="choice-label">לפי ספק<br/><small style="color:var(--muted);">ניתוח נפרד לכל ספק</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep4('dept')">
+          <div class="choice-letter">C</div>
+          <div class="choice-label">לפי מחלקה<br/><small style="color:var(--muted);">ניתוח נפרד לכל מחלקה</small></div>
+        </div>
+        <div class="choice-card" onclick="runStep4('none')">
+          <div class="choice-letter" style="color:#8b949e;">D</div>
+          <div class="choice-label">ללא קיבוץ <small style="color:var(--accent);">(ברירת מחדל)</small><br/><small style="color:var(--muted);">כל החומרים יחד</small></div>
+        </div>
+      </div>
+    </div>`
+  );
+}
+
+function runStep4(groupBy){
+  const d = dedupedData || DEMO;
+  const labels = { project:'פרויקט', supplier:'ספק', dept:'מחלקה', none:'(ללא קיבוץ)' };
+
+  if(groupBy==='none'){
+    // No grouping - aggregate all
+    const cnt={};
+    d.forEach(r=>{const m=(r.material||'').trim();cnt[m]=(cnt[m]||0)+1;});
+    const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const total=d.length; let cum=0;
+    const cumPcts=sorted.map(([,v])=>{cum+=v/total*100;return +cum.toFixed(1);});
+    const hotThres=Math.max(3,total*0.10);
+    const canvasId='p4chart_none'; destroyWizChart(canvasId);
+    const rows=sorted.map(([m,v],i)=>[
+      i+1,m,`<strong>${v}</strong>`,((v/total)*100).toFixed(1)+'%',cumPcts[i]+'%',v>=hotThres?'🔥 Hot Spot':''
+    ]);
+    renderResult(
+      resultHeader(4,'1.4 Pareto – ללא קיבוץ (TOP 10)',`${d.length} תקלות לאחר Dedup`) +
+      `<div class="result-block">
+        <div class="result-block-title">📦 TOP 10 תיאורי חומר</div>
+        ${tbl(['#','תיאור חומר','כמות','%','% מצטבר','Hot Spot'],rows)}
+        <div class="result-chart-box" style="height:220px;margin-top:12px;"><canvas id="${canvasId}"></canvas></div>
+      </div>
+      <div class="insight-box">⚠ לתשומת ליבך: ניתוח ה-PARETO עלול להיות לא מדויק.</div>` +
+      nextHint(4)
+    );
+    setTimeout(()=>{
+      const canvas=document.getElementById(canvasId); if(!canvas) return;
+      wizCharts[canvasId]=new Chart(canvas,{type:'bar',
+        data:{labels:sorted.map(([k])=>k.length>18?k.slice(0,18)+'…':k),
+          datasets:[
+            {label:'כמות',data:sorted.map(([,v])=>v),
+              backgroundColor:sorted.map(([,v])=>v>=hotThres?'#ffa657':'#388bfd'),borderRadius:4,borderWidth:0},
+            {type:'line',label:'% מצטבר',data:cumPcts,borderColor:'#ff7b72',backgroundColor:'transparent',
+              pointBackgroundColor:'#ff7b72',tension:.3,yAxisID:'y2'}
+          ]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:'#8b949e',boxWidth:10}}},
+          scales:{x:{ticks:{color:'#8b949e',maxRotation:35,font:{size:9}},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},
+            y2:{position:'left',min:0,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{display:false}}}}
+      });
+    },80);
+    markDone(4); return;
+  }
+
+  // Grouped (A, B, or C)
+  const groupLabel = labels[groupBy]||groupBy;
+  const groups={};
+  d.forEach(r=>{
+    const gKey=groupBy==='project'?r.project:
+               groupBy==='supplier'?(r.supplier||'ללא ספק'):
+               (r.dept||'לא ידוע').split('-')[0].trim().slice(0,20);
+    if(!groups[gKey]) groups[gKey]=[];
+    groups[gKey].push(r);
+  });
+
+  const projects = [...new Set(d.map(r=>r.project))].sort();
+  let html = resultHeader(4,`1.4 Pareto – לפי ${groupLabel} (TOP 10)`,
+    `קיבוץ: תיאור חומר + ${groupLabel} | ${d.length} תקלות לאחר Dedup`);
+
+  Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).forEach(([gName,gData],gi)=>{
+    const cnt={};
+    gData.forEach(r=>{const m=(r.material||'').trim();cnt[m]=(cnt[m]||0)+1;});
+    const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const total=gData.length; let cum=0;
+    const cumPcts=sorted.map(([,v])=>{cum+=v/total*100;return +cum.toFixed(1);});
+    const hotThres=Math.max(3,total*0.10);
+    const canvasId=`p4g_${gi}`; destroyWizChart(canvasId);
+    const rows=sorted.map(([m,v],i)=>[
+      i+1,m,`<strong>${v}</strong>`,((v/total)*100).toFixed(1)+'%',cumPcts[i]+'%',v>=hotThres?'🔥':''
+    ]);
+    html+=`<div class="result-block">
+      <div class="result-block-title">📦 ${groupLabel}: ${gName} (${gData.length} תקלות)</div>
+      ${tbl(['#','תיאור חומר','כמות','%','% מצטבר','Hot'],rows)}
+      <div class="result-chart-box" style="height:200px;margin-top:10px;"><canvas id="${canvasId}"></canvas></div>
+    </div>`;
+    setTimeout((cid,s,t,h)=>{
+      const canvas=document.getElementById(cid); if(!canvas) return;
+      let c2=0; const cp=s.map(([,v])=>{c2+=v/t*100;return +c2.toFixed(1);});
+      wizCharts[cid]=new Chart(canvas,{type:'bar',
+        data:{labels:s.map(([k])=>k.length>18?k.slice(0,18)+'…':k),
+          datasets:[{label:'כמות',data:s.map(([,v])=>v),
+            backgroundColor:s.map(([,v])=>v>=h?'#ffa657':'#388bfd'),borderRadius:4,borderWidth:0},
+            {type:'line',label:'% מצטבר',data:cp,borderColor:'#ff7b72',backgroundColor:'transparent',
+              pointBackgroundColor:'#ff7b72',tension:.3,yAxisID:'y2'}]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{labels:{color:'#8b949e',boxWidth:10}}},
+          scales:{x:{ticks:{color:'#8b949e',maxRotation:35,font:{size:9}},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},
+            y2:{position:'left',min:0,max:100,ticks:{color:'#8b949e',callback:v=>v+'%'},grid:{display:false}}}}
+      });
+    },80,canvasId,sorted,total,hotThres);
+  });
+
+  html+=`<div class="insight-box">
+    <strong>📌 תובנות:</strong><br/>
+    • ניתוח לפי <strong>${groupLabel}</strong> – הפרדה מלאה בין ${Object.keys(groups).length} קבוצות.<br/>
+    • 🔥 Hot Spot = ≥10% מהתקלות בקבוצה או ≥3 תקלות.<br/>
+    ⚠ לתשומת ליבך: ניתוח ה-PARETO עלול להיות לא מדויק.
+  </div>`+nextHint(4);
+  renderResult(html);
+  markDone(4);
+}
+
+/* ══ STEP 5 – 1.5 פעילות מתקנת שבוצעה ══ */
+function runStep5(){
+  const d = dedupedData || DEMO;
+  const withAction = d.filter(r=>r.status==='סגור');
+  const noAction   = d.filter(r=>r.status==='פתוח');
+  const closedNoText = withAction.filter(r=>!r.longAction||r.longAction.trim().length<=5);
+
+  const detailRows = d.slice(0,20).map((r,i)=>{
+    const hasLong = r.longAction && r.longAction.trim().length>5;
+    const summary = hasLong ? r.longAction.slice(0,75)+'…' : (r.notifText||'—').slice(0,55);
+    return [i+1, r.id, r.type, (r.material||'—').slice(0,20),
+      (r.notifText||'—').slice(0,32), summary, hasLong?'✅':'❌',
+      r.status==='סגור'?'<span class="tag green">סגור</span>':'<span class="tag orange">פתוח</span>'];
+  });
+
+  renderResult(
+    resultHeader(5,'1.5 פעילות מתקנת שבוצעה','מתוך שדה "טקסט פעילות ארוך" / "תיאור הודעה"') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 סיכום סטטוס פעילות מתקנת</div>
+      ${tbl(['פרמטר','ערך','הערה'],[
+        ['הודעות סגורות',withAction.length,((withAction.length/d.length)*100).toFixed(0)+'%'],
+        ['הודעות פתוחות',noAction.length,((noAction.length/d.length)*100).toFixed(0)+'%'],
+        ['סגורות ללא טקסט ארוך (תיעוד לקוי)',closedNoText.length,closedNoText.length>0?'⚠ AS9100':'✅'],
+        ['אחוז סגירה',((withAction.length/d.length)*100).toFixed(1)+'%',''],
       ])}
     </div>` +
     `<div class="result-block">
-      <div class="result-block-title">✅ פעילות מתקנת בוצעה (${withAction.length} הודעות)${withAction.length>20?' – מוצגות 20 ראשונות':''}</div>
-      ${tbl(['מספר הודעה','פרויקט','סוג','תיאור חומר','סטטוס','קטגוריית RCA'], actionRows)}
+      <div class="result-block-title">📋 פרטי פעילות – 20 ראשונות (✅ = יש טקסט ארוך)</div>
+      ${tbl(['#','מספר הודעה','סוג','חומר','תיאור הודעה','סיכום פעילות','טקסט ארוך','סטטוס'], detailRows)}
     </div>` +
-    (noAction.length ? `<div class="result-block">
-      <div class="result-block-title" style="color:var(--warn);">⚠ הודעות פתוחות ממתינות לטיפול (${noAction.length})</div>
-      ${tbl(['מספר הודעה','פרויקט','סוג','תיאור חומר'],
-        noAction.slice(0,10).map(r=>[r.id, r.project, r.type, r.material.slice(0,28)]))}
-    </div>` : '') +
+    (closedNoText.length>0?`<div class="result-block" style="border-color:var(--warn);">
+      <div class="result-block-title" style="color:var(--warn);">⚠ ${closedNoText.length} הודעות סגורות ללא תיעוד – אי עמידה ב-AS9100</div>
+      ${tbl(['מספר הודעה','חומר','סוג'],closedNoText.slice(0,10).map(r=>[r.id,r.material.slice(0,25),r.type]))}
+    </div>`:'') +
+    (noAction.length?`<div class="result-block">
+      <div class="result-block-title" style="color:var(--warn);">⚠ הודעות פתוחות (${noAction.length}) – הפעילות טרם הושלמה</div>
+      ${tbl(['מספר הודעה','חומר','סוג','ספק'],
+        noAction.slice(0,10).map(r=>[r.id,r.material.slice(0,22),r.type,r.supplier||'—']))}
+      <p style="color:var(--muted);font-size:.78rem;margin-top:6px;">הערה: הודעות פתוחות ללא טקסט – אינה בעיה תיעודית.</p>
+    </div>`:'') +
     `<div class="insight-box">
       <strong>📌 תובנות:</strong><br/>
-      • <strong>${withAction.length}</strong> מתוך <strong>${d.length}</strong> הודעות טופלו ונסגרו.<br/>
-      ${noAction.length ? `• ⚠ יש <strong>${noAction.length}</strong> הודעות פתוחות הדורשות טיפול מיידי.` : '• ✅ כל ההודעות טופלו.'}
-    </div>` +
-    nextHint(6)
+      • <strong>${withAction.length}</strong>/${d.length} נסגרו (${((withAction.length/d.length)*100).toFixed(0)}%).<br/>
+      ${closedNoText.length>0?`• ⚠ <strong>${closedNoText.length}</strong> סגורות ללא תיעוד – פגיעה ב-AS9100.`:'• ✅ כל הסגורות כוללות תיעוד.'}
+    </div>` + nextHint(5)
   );
+  markDone(5);
+}
+
+/* ══ STEP 6 – 1.6 סיווג קטגוריות בעיות (19 קטגוריות AS9100) ══ */
+function runStep6(){
+  const d = dedupedData || DEMO;
+  const classified = d.map(r=>({...r, cat:classifyAS9100(r)}));
+  const catCnt={};
+  classified.forEach(r=>{catCnt[r.cat]=(catCnt[r.cat]||0)+1;});
+  const sortedCats=Object.entries(catCnt).sort((a,b)=>b[1]-a[1]);
+  const total=d.length, hotThres=Math.max(3,total*0.10);
+
+  const freqRows=sortedCats.map(([cat,v],i)=>[
+    i+1,cat,AS9100_CATS[+cat]||'אחר',`<strong>${v}</strong>`,((v/total)*100).toFixed(1)+'%',
+    v>=hotThres?'🔥 Hot Spot':''
+  ]);
+
+  const detailRows=classified.slice(0,20).map((r,i)=>{
+    const catName=AS9100_CATS[r.cat]||'אחר';
+    const existing=(r.defectCode||'—');
+    const existingCat=DC_CAT[existing]||0;
+    const match=(existingCat===r.cat)||(r.cat===19&&existingCat===0);
+    return [i+1,r.id,r.type,(r.material||'—').slice(0,20),
+      (r.notifText||'—').slice(0,28),catName,existing.slice(0,28),match?'✅':'❌'];
+  });
+
+  const canvasId='p6chart'; destroyWizChart(canvasId);
+  renderResult(
+    resultHeader(6,'1.6 סיווג קטגוריות בעיות','19 קטגוריות AS9100 | השוואה לשדה "קוד הפגם"') +
+    `<div class="result-block">
+      <div class="result-block-title">📊 שכיחות לפי 19 קטגוריות AS9100</div>
+      ${tbl(['#','קטגוריה #','שם קטגוריה','כמות','%','Hot Spot'],freqRows)}
+      <div class="result-chart-box" style="height:220px;margin-top:10px;"><canvas id="${canvasId}"></canvas></div>
+    </div>` +
+    `<div class="result-block">
+      <div class="result-block-title">🔍 סיווג פרטני – השוואה לקוד הפגם (✅=התאמה ❌=סתירה)</div>
+      ${tbl(['#','מספר הודעה','סוג','חומר','תיאור הודעה','קטגוריה (סיווג)','קוד הפגם','התאמה'],detailRows)}
+    </div>` +
+    `<div class="insight-box">
+      <strong>📌 תובנות:</strong><br/>
+      • הקטגוריה הנפוצה: <strong>${AS9100_CATS[+sortedCats[0]?.[0]]||'—'}</strong> (${sortedCats[0]?.[1]||0} תקלות).<br/>
+      • 🔥 Hot Spot = ≥10% מהתקלות או ≥3 תקלות.<br/>
+      • ❌ = סתירה בין הסיווג האוטומטי לקוד הפגם – מצריכה בדיקה.
+    </div>` + nextHint(6)
+  );
+  setTimeout(()=>{
+    const canvas=document.getElementById(canvasId); if(!canvas) return;
+    const topC=sortedCats.slice(0,8);
+    const PC=['#388bfd','#ffa657','#7ee787','#ff7b72','#d2a8ff','#e3b341','#56d364','#79c0ff'];
+    wizCharts[canvasId]=new Chart(canvas,{type:'bar',
+      data:{labels:topC.map(([c])=>(AS9100_CATS[+c]||'אחר').slice(0,18)),
+        datasets:[{label:'כמות',data:topC.map(([,v])=>v),
+          backgroundColor:PC,borderRadius:5,borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e',maxRotation:40,font:{size:9}},grid:{color:'rgba(255,255,255,.05)'}},
+                y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'},beginAtZero:true}}}
+    });
+  },80);
   markDone(6);
 }
 
-/* ══ STEP 7 – RCA ══ */
+/* ══ STEP 7 – 1.7 ניתוח סיבות שורש (RCA / 5M) ══ */
 function runStep7(){
   const d = dedupedData || DEMO;
   const cats = ['Man','Machine','Material','Method','Measurement','Design','Unknown'];
+  const CAT_HE = {Man:'גורם אנוש',Machine:'ציוד/כלים',Material:'חומר',
+    Method:'תהליך/שיטה',Measurement:'מדידה',Design:'תכן/הנדסה',Unknown:'לא ידוע'};
   const catCnt = {}; cats.forEach(c=>catCnt[c]=0);
   d.forEach(r=>{ const c=r.rca||'Unknown'; catCnt[c]=(catCnt[c]||0)+1; });
   const total = d.length;
 
-  const rcaRows = cats.filter(c=>catCnt[c]>0).map((c,i)=>[
-    i+1, c, catCnt[c], ((catCnt[c]/total)*100).toFixed(1)+'%',
-    `<span class="tag ${catCnt[c]/total>=0.20?'red':catCnt[c]/total>=0.10?'orange':'green'}">${catCnt[c]/total>=0.20?'High':'Low'}</span>`,
-    catCnt[c]>=3?'High':catCnt[c]===2?'Medium':'Low'
+  const rcaRows = cats.filter(c=>catCnt[c]>0).sort((a,b)=>catCnt[b]-catCnt[a]).map((c,i)=>[
+    i+1, c, CAT_HE[c], catCnt[c], ((catCnt[c]/total)*100).toFixed(1)+'%',
+    `<span class="tag ${catCnt[c]/total>=0.20?'red':catCnt[c]/total>=0.10?'orange':'green'}">${catCnt[c]/total>=0.20?'HIGH':catCnt[c]/total>=0.10?'MEDIUM':'LOW'}</span>`,
   ]);
 
-  const detailRows = d.slice(0,20).map(r => {
-    const conf = (r.rca&&r.rca!=='Unknown')?'High':'Unknown';
-    return [r.id, r.project, r.material.slice(0,20), r.rca||'Unknown',
-      `<span class="tag ${conf==='High'?'green':''}">${conf}</span>`];
+  // 1.7.1 – השוואה לשדה "סיבת פגם"
+  const RC_MAP = {
+    'שרטוט הנדסי':'Design','עדכון התיכון':'Design','תיכון של ספק':'Design',
+    'תיעוד הנדסי':'Design','דגם הנדסי':'Design','ישום דרישות לפרויקט':'Design','משפך טולרנסים':'Design',
+    'אמצעי עבודה':'Machine','יציבות התהליך':'Method','הוראות עבודה':'Method',
+    'בקרת החלטות הועדה':'Method','תקשורת עם ספק':'Method',
+    'מודעות':'Man','עבודה בניגוד להוראות':'Man','שימוש חריג במוצר':'Man',
+    'יצור של ספק':'Material','מרכיב בפקע':'Material',
+  };
+  const compRows = d.slice(0,20).map((r,i)=>{
+    const existing=(r.rootCause||'—');
+    const derivedRca=RC_MAP[existing]||'Unknown';
+    const match=derivedRca===r.rca||(derivedRca==='Unknown'&&r.rca==='Unknown');
+    const conf=(r.rca&&r.rca!=='Unknown')?'High':'Unknown';
+    return [i+1,r.id,(r.material||'—').slice(0,18),existing.slice(0,22),
+      r.rca||'Unknown',`<span class="tag ${conf==='High'?'green':''}">${conf}</span>`,match?'✅':'❌'];
   });
 
   const canvasId = 'p7chart';
   destroyWizChart(canvasId);
 
   renderResult(
-    resultHeader(7,'ניתוח סיבות שורש – RCA','מתודולוגיית 5M: Man · Machine · Material · Method · Measurement · Design') +
+    resultHeader(7,'1.7 ניתוח סיבות שורש – RCA','5M+D: Man·Machine·Material·Method·Measurement·Design') +
     `<div class="result-block">
-      <div class="result-block-title">📊 שכיחות לפי קטגוריית 5M</div>
-      ${tbl(['#','קטגוריה 5M','כמות','%','תדירות','Confidence'], rcaRows)}
+      <div class="result-block-title">📊 שכיחות לפי קטגוריית 5M (בסדר יורד)</div>
+      ${tbl(['#','קטגוריה 5M','עברית','כמות','%','תדירות'], rcaRows)}
       <div class="result-chart-box" style="height:210px;margin-top:12px;">
         <canvas id="${canvasId}"></canvas>
       </div>
     </div>` +
     `<div class="result-block">
-      <div class="result-block-title">🔍 RCA פרטני – 20 ראשונות</div>
-      ${tbl(['מספר הודעה','פרויקט','תיאור חומר','סיבת שורש (5M)','Confidence'], detailRows)}
+      <div class="result-block-title">🔍 1.7.1 – השוואת סיבת שורש לשדה "סיבת פגם" (✅=התאמה ❌=סתירה)</div>
+      ${tbl(['#','מספר הודעה','חומר','סיבת פגם (שדה)','סיבת שורש (5M)','Confidence','התאמה'], compRows)}
     </div>` +
     `<div class="insight-box">
-      <strong>📌 תובנות:</strong><br/>
-      • סיבת השורש הנפוצה ביותר: <strong>${cats.reduce((a,b)=>catCnt[a]>=catCnt[b]?a:b)}</strong>.<br/>
-      • תקלות עם Confidence=Unknown מצריכות חקירה נוספת.<br/>
-      • המלצה: להתמקד בניתוח 5WHY עבור הקטגוריה הדומיננטית.
-    </div>` +
-    nextHint(7)
+      <strong>📌 תובנות (5WHY / Fishbone / FTA):</strong><br/>
+      • סיבת השורש הנפוצה: <strong>${cats.filter(c=>catCnt[c]>0).sort((a,b)=>catCnt[b]-catCnt[a])[0]}</strong>.<br/>
+      • HIGH ≥20% | MEDIUM ≥10% | LOW &lt;10%.<br/>
+      • ❌ = אי-התאמה בין RCA לשדה "סיבת פגם" – מצריך חקירה נוספת.
+    </div>` + nextHint(7)
   );
   setTimeout(()=>{
     const canvas = document.getElementById(canvasId);
@@ -3093,182 +3379,287 @@ function runStep7(){
   markDone(7);
 }
 
-/* ══ STEP 8 – CAPA ══ */
+/* ══ STEP 8 – 1.8 הצעות CAPA ══ */
 function runStep8(){
   const d = dedupedData || DEMO;
   const catCnt = {};
   d.forEach(r=>{ const c=r.rca||'Unknown'; catCnt[c]=(catCnt[c]||0)+1; });
-  const topCats = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const topCats = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
   const CAPA_MAP = {
-    Material:    { corrective:'החזרת פריטים פגומים לספק + בדיקת נכנסת (Incoming Inspection)', preventive:'הגדרת דרישות QC לספק + עדכון MSA' },
-    Man:         { corrective:'הדרכה מחדש למפעילים + בדיקת הסמכות', preventive:'עדכון נהלי הדרכה + הוספת Error-Proofing' },
-    Method:      { corrective:'עדכון Work Instruction + ביצוע Process Audit', preventive:'תיקון נוהל + הוספת Checkpoint בתהליך' },
-    Machine:     { corrective:'כיול/תיקון ציוד בדיקה + PM מיידי', preventive:'עדכון תוכנית PM + ביקורת ציוד תקופתית' },
-    Measurement: { corrective:'כיול מחדש לכלי המדידה + ביקורת תוצאות', preventive:'עדכון תדירות כיול + הדרכת MSA' },
-    Design:      { corrective:'פתיחת Engineering Change Request (ECR) + ניתוח FMEA', preventive:'עדכון Design Validation Plan + DFM review' },
-    Unknown:     { corrective:'חקירה נוספת נדרשת – פתיחת 5WHY מפורט', preventive:'הגדרת Critical Parameter לניטור' },
+    Material:    { ca:'בידוד פריטים חשודים + Incoming Inspection מחמיר', pa:'עדכון נוהל קבלת חומר + דרישת COC מספק' },
+    Man:         { ca:'הדרכה ממוקדת + ביקורת עמיתים', pa:'עדכון תוכנית הדרכה + הסמכות חובה + Error-Proofing' },
+    Method:      { ca:'עדכון Work Instruction + Process Audit מיידי', pa:'Poka-Yoke + PFMEA + Checkpoint בתהליך' },
+    Machine:     { ca:'כיול/תיקון ציוד + PM מיידי', pa:'תוכנית PM שנתית + בדיקה תקופתית מחמירה' },
+    Measurement: { ca:'כיול מחדש + MSA', pa:'תוכנית כיול שנתית + עדכון תוכנית מדידה' },
+    Design:      { ca:'פתיחת ECR/ECN + עדכון שרטוט', pa:'Design Review + DFMEA + תיקוף נוסף' },
+    Unknown:     { ca:'5WHY מפורט + איסוף מידע נוסף', pa:'הגדרת פרוטוקול תיעוד לכל תקלה' },
   };
 
   const capaRows = topCats.map(([cat,cnt],i)=>{
-    const m = CAPA_MAP[cat]||CAPA_MAP.Unknown;
-    return [i+1, cat, cnt, m.corrective, m.preventive];
+    const m=CAPA_MAP[cat]||CAPA_MAP.Unknown;
+    const prio=cnt/d.length>=0.20?'🔴 מיידי':cnt/d.length>=0.10?'🟡 30 יום':'🟢 90 יום';
+    return [i+1,cat,cnt,m.ca,m.pa,prio];
   });
 
+  const priorityPlan=[
+    ['🔴','חקירה ראשונית','48 שעות','בידוד פריטים + CAR'],
+    ['🔴','RCA מפורט','שבוע','5WHY + Fishbone לתקלות HIGH'],
+    ['🟡','יישום CA','30 יום','עדכון נהלים + הדרכה + ביקורת'],
+    ['🟡','Supplier Audit','30 יום','SCAR + ביקורת ספקים HIGH'],
+    ['🟢','יישום PA','90 יום','PFMEA + Lessons Learned'],
+    ['🟢','ביקורת אפקטיביות','180 יום','KPIs + סגירת CAPA'],
+  ];
+
   renderResult(
-    resultHeader(8,'הצעות CAPA – פעילות מתקנת/מונעת','מבוסס על סיבות השורש מניתוח RCA (שלב 7)') +
+    resultHeader(8,'1.8 הצעות CAPA','Corrective and Preventive Actions – מבוסס RCA שלב 1.7') +
     `<div class="result-block">
-      <div class="result-block-title">🛠 CAPA לפי קטגוריות RCA מובילות</div>
-      ${tbl(['#','קטגוריה','כמות תקלות','Corrective Action (מתקן)','Preventive Action (מונע)'], capaRows)}
+      <div class="result-block-title">🛠 CAPA לפי קטגוריית 5M</div>
+      ${tbl(['#','קטגוריה','כמות','Corrective Action (CA)','Preventive Action (PA)','עדיפות'], capaRows)}
     </div>` +
     `<div class="result-block">
-      <div class="result-block-title">📋 עדיפות ביצוע</div>
-      ${tbl(['עדיפות','קריטריון','פעולה'], [
-        ['1 – מיידי',  'תקלות פתוחות עם Supplier Risk HIGH',  'פתיחת SCAR + חקירת ספק'],
-        ['2 – שבועי',  'קטגוריית RCA דומיננטית',              'יישום CAPA + עדכון נוהל'],
-        ['3 – חודשי',  'Hot Spots בניתוח Pareto',             'Process Audit + שיפור מונע'],
-        ['4 – רבעוני', 'בדיקת תקלות חוזרות',                 'Recurrence Review + Lessons Learned'],
-      ])}
+      <div class="result-block-title">📅 תוכנית עדיפויות CAPA</div>
+      ${tbl(['עדיפות','שלב','לוח זמנים','פעולה'], priorityPlan)}
     </div>` +
     `<div class="insight-box">
       <strong>📌 תובנות:</strong><br/>
-      • כל CAPA מחייב: אחראי ביצוע + תאריך יעד + אימות סגירה.<br/>
-      • יש לתעד פעילות מתקנת בהתאם לדרישות AS9100 Rev D.
-    </div>` +
-    nextHint(8)
+      • CA = תיקון הבעיה הנוכחית | PA = מניעת הישנות.<br/>
+      • כל CAPA: אחראי ביצוע + תאריך יעד + ראיות + אישור מנהל איכות.<br/>
+      • ♻ מומלץ לקשר CAPA לתיק שינוי (ECR/ECN) ולעדכן FMEA.
+    </div>` + nextHint(8)
   );
   markDone(8);
 }
 
-/* ══ STEP 9 – Reports (choice) ══ */
+/* ══ STEP 9 – 1.9 דוחות נלווים (A–I) ══ */
 function showStep9Choice(){
+  const opts=[
+    ['A','#79c0ff','דו"ח טיוב נתונים','ניתוח מסכם'],
+    ['B','#388bfd','דו"ח רוחבי','Across Table'],
+    ['C','#ffa657','SCAR לספק','ZV בלבד'],
+    ['D','#ff7b72','דוח 8D','8 Disciplines'],
+    ['E','#7ee787','NCR פנימי','Aviation A4 AS9100'],
+    ['F','#d2a8ff','סיכום ZM/MRB','ועדת סקר'],
+    ['G','#e3b341','תקלה בודדת','פרטי NCR מלא'],
+    ['H','#56d364','תקלות חוזרות','Recurrence Report'],
+    ['I','#8b949e','דשבורד מסכם','כל הניתוחים'],
+  ];
   renderResult(
-    resultHeader(9,'דוחות נלווים','בחר סוג דוח להפקה') +
+    resultHeader(9,'1.9 דוחות נלווים','בחר סוג דוח – A עד I לפי Ver_10') +
     `<div class="result-block">
       <div class="result-block-title">📄 בחר דוח</div>
-      <div class="choice-grid">
-        <div class="choice-card" onclick="runStep9('8D')">
-          <div class="choice-letter" style="color:#ff7b72;">8D</div>
-          <div class="choice-label">דוח 8D<br/><small style="color:var(--muted);">8 Disciplines</small></div>
-        </div>
-        <div class="choice-card" onclick="runStep9('SCAR')">
-          <div class="choice-letter" style="color:#ffa657;">SCAR</div>
-          <div class="choice-label">SCAR לספק<br/><small style="color:var(--muted);">ZV בלבד</small></div>
-        </div>
-        <div class="choice-card" onclick="runStep9('NCR')">
-          <div class="choice-letter" style="color:#79c0ff;">NCR</div>
-          <div class="choice-label">NCR פנימי<br/><small style="color:var(--muted);">Aviation A4</small></div>
-        </div>
-        <div class="choice-card" onclick="runStep9('MRB')">
-          <div class="choice-letter" style="color:#7ee787;">MRB</div>
-          <div class="choice-label">סיכום MRB<br/><small style="color:var(--muted);">ועדת סקר</small></div>
-        </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        ${opts.map(([l,c,n,s])=>`<div class="choice-card" onclick="runStep9('${l}')"
+          style="cursor:pointer;padding:12px;text-align:center;">
+          <div class="choice-letter" style="color:${c};font-size:1.3rem;">${l}</div>
+          <div style="font-weight:700;font-size:.82rem;">${n}</div>
+          <div style="color:var(--muted);font-size:.72rem;margin-top:2px;">${s}</div>
+        </div>`).join('')}
       </div>
     </div>`
   );
 }
 
 function runStep9(type){
-  const d = dedupedData || DEMO;
-  const sample = d[0]||{};
-  const zvData = d.filter(r=>r.type==='ZV');
-  const templates = {
-    '8D': `<div class="result-block"><div class="result-block-title">📋 דוח 8D – תקלה לדוגמה</div>
+  const d=dedupedData||DEMO, sample=d[0]||{};
+  const zvData=d.filter(r=>r.type==='ZV'), zmData=d.filter(r=>r.type==='ZM');
+  const today=new Date().toLocaleDateString('he-IL');
+  const projects=[...new Set(d.map(r=>r.project))].join(', ');
+  const catCnt={}; d.forEach(r=>{catCnt[r.rca||'Unknown']=(catCnt[r.rca||'Unknown']||0)+1;});
+  const topRca=Object.entries(catCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const matCnt={}; d.forEach(r=>{matCnt[r.material]=(matCnt[r.material]||0)+1;});
+  const {typeA,typeB}=detectRecurring(d);
+
+  const templates={
+    'A':`<div class="result-block"><div class="result-block-title">📊 A – דו"ח טיוב נתונים וניתוח מסכם</div>
+      ${tbl(['פרמטר','ערך'],[
+        ['תאריך ניתוח',today],['פרויקט',projects],['תקופת ניתוח','ינואר 2025 – 2026'],
+        ['כמות הודעות שנותחו',d.length],['הודעות ייחודיות',[...new Set(d.map(r=>String(r.id).replace(/[a-z]$/i,'')))].length],
+        ['ספקים',[...new Set(d.filter(r=>r.supplier).map(r=>r.supplier))].join(', ')],
+        ['מחלקות',[...new Set(d.map(r=>r.dept))].length+' מחלקות'],
+        ['הודעות פתוחות',d.filter(r=>r.status==='פתוח').length],
+        ['הודעות סגורות',d.filter(r=>r.status==='סגור').length],
+        ['Top Material',Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—',Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]?.[1]+' תקלות'],
+        ['Top RCA',topRca[0],topRca[1]+' תקלות'],
+      ])}
+    </div>`,
+    'B':`<div class="result-block"><div class="result-block-title">📈 B – דו"ח רוחבי (Across Table)</div>
+      ${tbl(['ניתוח','ממצא','המלצה'],[
+        ['Pareto חומרים',Object.entries(matCnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([m,v])=>m.slice(0,15)+'('+v+')').join(', '),'חקירת שורש לחומרים מובילים'],
+        ['Pareto AS9100',(()=>{const c={};d.forEach(r=>{const cat=classifyAS9100(r);c[AS9100_CATS[cat]]=(c[AS9100_CATS[cat]]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>k.slice(0,18)+'('+v+')').join(', ');})(),'CAPA ממוקד'],
+        ['סוגי הודעה',`ZP:${d.filter(r=>r.type==='ZP').length} ZV:${d.filter(r=>r.type==='ZV').length} ZM:${d.filter(r=>r.type==='ZM').length}`,'בדיקת ZV + ועדת סקר'],
+        ['RCA מוביל',topRca[0]+' ('+topRca[1]+')','CAPA מניעתי'],
+        ['תקלות חוזרות (סוג א)',typeA.length+' קבוצות חומר','Lessons Learned + FMEA'],
+      ])}
+    </div>`,
+    'C':zvData.length?`<div class="result-block"><div class="result-block-title">⚠ C – SCAR לספק</div>
+      ${tbl(['שדה','ערך'],[
+        ['ספק',zvData[0].supplier||'—'],['מספר SCAR','SCAR-'+Date.now().toString().slice(-6)],
+        ['תאריך פתיחה',today],['כמות תקלות ZV',zvData.length],
+        ['חומר מרכזי',zvData[0].material||'—'],['דרישת תגובה','14 ימי עסקים'],
+        ['Supplier Risk',zvData.length/d.length>0.2?'HIGH':'MEDIUM'],
+        ['אשמת ספק',zvData.filter(r=>(r.suppFault||'').includes('באשמת ספק')&&!r.suppFault.includes('לא')).length+'/'+zvData.length],
+        ['דרישה','RCA מפורט (5WHY + Fishbone) + CAPA מוכח תוך 14 יום'],
+      ])}
+    </div>`:'<div class="insight-box">⚠ לא נמצאו הודעות ZV.</div>',
+    'D':`<div class="result-block"><div class="result-block-title">📋 D – דוח 8D (8 Disciplines)</div>
       ${tbl(['שלב','תיאור','מילוי'],[
-        ['D1 – צוות','הרכבת צוות רב-תחומי','מנהל איכות, מהנדס, מפעיל'],
-        ['D2 – תיאור הבעיה','תיאור מדויק של התקלה',`תיאור חומר: ${sample.material||'—'} | פרויקט: ${sample.project||'—'}`],
-        ['D3 – בלימה מיידית','פעולות בלימה זמניות','בידוד פריטים חשודים, עצירת שחרור'],
-        ['D4 – RCA','ניתוח סיבת שורש',`קטגוריה: ${sample.rca||'—'}`],
-        ['D5 – CA נבחרת','פעולה מתקנת קבועה','לפי הצעות CAPA (שלב 8)'],
-        ['D6 – יישום','יישום ואימות','תאריך יעד + אחראי ביצוע'],
-        ['D7 – מניעה','מניעת הישנות','עדכון נוהל + הדרכה'],
-        ['D8 – הכרה','סגירה ותיעוד','תיעוד Lessons Learned'],
-      ])}</div>`,
-    'SCAR': zvData.length ? `<div class="result-block"><div class="result-block-title">⚠ SCAR – ${zvData[0].supplier||'ספק'}</div>
+        ['D1 – Team','הרכבת צוות','מנהל איכות + מהנדס + בודק + נציג ספק'],
+        ['D2 – Problem','תיאור מדויק',`חומר: ${sample.material||'—'} | סוג: ${sample.type||'—'} | קוד: ${sample.defectCode||'—'}`],
+        ['D3 – Containment','בלימה מיידית','בידוד פריטים | עצירת שחרור | הגבלת שימוש'],
+        ['D4 – RCA','ניתוח סיבת שורש',`5M: ${topRca[0]} | Confidence: ${sample.rca?'High':'Unknown'}`],
+        ['D5 – CA','פעולה מתקנת',`לפי CAPA 1.8 – ${topRca[0]==='Design'?'ECR/ECN':topRca[0]==='Man'?'הדרכה':'עדכון נוהל'}`],
+        ['D6 – Implementation','יישום + אימות','תאריך יעד + אחראי + ראיות ביצוע'],
+        ['D7 – Prevention','מניעת הישנות','FMEA + Lessons Learned + SOPs'],
+        ['D8 – Recognition','סגירה + תיעוד','אישור מנהל איכות + תיוק'],
+      ])}
+    </div>`,
+    'E':`<div class="result-block"><div class="result-block-title">📄 E – NCR פנימי (Aviation A4 | AS9100 IAI Practice)</div>
       ${tbl(['שדה','ערך'],[
-        ['ספק',zvData[0].supplier||'—'],['מספר SCAR',`SCAR-${Date.now().toString().slice(-6)}`],
-        ['תאריך פתיחה',new Date().toLocaleDateString('he-IL')],['כמות תקלות',zvData.length],
-        ['חומר',zvData[0].material||'—'],['דרישת תגובה','14 ימי עסקים'],
-        ['תיאור תקלה',`${zvData.length} תקלות ספק זוהו | Supplier Risk: HIGH`],
-        ['דרישה','RCA מפורט + CAPA תוך 14 יום'],
-      ])}</div>` : '<div class="insight-box">⚠ לא נמצאו הודעות ZV בנתונים.</div>',
-    'NCR': `<div class="result-block"><div class="result-block-title">📄 NCR – Aviation A4 (AS9100 IAI Practice)</div>
-      ${tbl(['שדה','ערך'],[
-        ['NCR Number',`NCR-${Date.now().toString().slice(-6)}`],['תאריך',new Date().toLocaleDateString('he-IL')],
+        ['NCR Number','NCR-'+Date.now().toString().slice(-6)],['תאריך',today],
         ['פרויקט',sample.project||'—'],['חומר',sample.material||'—'],
         ['סוג הודעה',sample.type||'—'],['שלב גילוי',sample.discovery||'—'],
-        ['תיאור אי-התאמה',`${sample.material||'—'} – ${sample.rca||'—'}`],
-        ['פעולה בלימה','בידוד פריטים'],['סטטוס',sample.status||'—'],
-      ])}</div>`,
-    'MRB': `<div class="result-block"><div class="result-block-title">🏛 סיכום MRB – Material Review Board</div>
-      ${tbl(['חומר','כמות','ספק','המלצה'],
-        d.filter(r=>r.type==='ZM').slice(0,8).map(r=>[r.material,1,r.supplier||'פנימי',
-          ['Use As Is','Rework','Scrap'][Math.floor(Math.random()*3)]])
-        .concat(d.filter(r=>r.type==='ZM').length===0?[['אין נתוני ZM בסינון','—','—','—']]:[])
-      )}</div>`,
+        ['מחלקה',sample.dept||'—'],['תיאור אי-התאמה',sample.notifText||'—'],
+        ['קוד פגם',sample.defectCode||'—'],['סיבת פגם',sample.rootCause||'—'],
+        ['RCA (5M)',sample.rca||'Unknown'],['פעולת בלימה','בידוד + החלטת MRB'],
+        ['ההחלטה','Use As Is / Rework / Scrap – לאישור MRB'],['סטטוס',sample.status||'—'],
+      ])}
+    </div>`,
+    'F':`<div class="result-block"><div class="result-block-title">🏛 F – סיכום ZM/MRB (ועדת סקר)</div>
+      ${zmData.length?tbl(['#','מספר הודעה','חומר','קוד פגם','המלצה'],
+        zmData.slice(0,10).map((r,i)=>[i+1,r.id,(r.material||'—').slice(0,25),r.defectCode||'—',
+          ['Use As Is','Rework','Scrap'][i%3]]))
+        :'<p style="color:var(--muted)">אין הודעות ZM בנתונים.</p>'}
+    </div>`,
+    'G':`<div class="result-block"><div class="result-block-title">🔎 G – דוח תקלה בודדת</div>
+      ${tbl(['שדה','ערך'],[
+        ['מספר הודעה',sample.id||'—'],['פרויקט',sample.project||'—'],
+        ['חומר',sample.material||'—'],['סוג',sample.type||'—'],
+        ['מחלקה',sample.dept||'—'],['ספק',sample.supplier||'ללא ספק'],
+        ['שלב גילוי',sample.discovery||'—'],['תיאור הבעיה',sample.notifText||'—'],
+        ['קוד פגם',sample.defectCode||'—'],['סיבת פגם',sample.rootCause||'—'],
+        ['סיבת שורש (5M)',sample.rca||'Unknown'],['פעילות שבוצעה',sample.longAction||'—'],
+        ['סטטוס',sample.status||'—'],
+      ])}
+    </div>`,
+    'H':(()=>{
+      return `<div class="result-block"><div class="result-block-title">♻ H – דוח תקלות חוזרות (Recurrence)</div>
+        <div style="font-weight:600;color:#7ee787;margin-bottom:6px;">סוג א – אותו חומר + בעיה דומה (${typeA.length} קבוצות)</div>
+        ${tbl(['#','חומר','כמות','מספרי הודעה','קוד פגם'],
+          typeA.slice(0,8).map(([m,arr],i)=>[i+1,m.slice(0,25),arr.length,
+            arr.slice(0,3).map(r=>r.id).join(', ')+(arr.length>3?'...':''),arr[0].defectCode||'—']))}
+        <div style="font-weight:600;color:#ffa657;margin:10px 0 6px;">סוג ב – הודעות משורשרות / מספר הודעה זהה (${typeB.length} קבוצות)</div>
+        ${tbl(['#','מספר הודעה','כמות','סוגים'],
+          typeB.slice(0,8).map(([id,arr],i)=>[i+1,id,arr.length,
+            arr.map(r=>`<span class="tag ${r.type==='ZP'?'green':'orange'}">${r.type}</span>`).join(' ')]))}
+      </div>`;
+    })(),
+    'I':`<div class="result-block"><div class="result-block-title">📊 I – דשבורד מסכם (כל הניתוחים)</div>
+      ${tbl(['שלב','ממצא עיקרי','המלצה'],[
+        ['1.2 סוגי הודעה',`ZP:${d.filter(r=>r.type==='ZP').length}|ZV:${d.filter(r=>r.type==='ZV').length}|ZM:${d.filter(r=>r.type==='ZM').length}`,'בדיקת ZV בעדיפות'],
+        ['1.3 כפילויות',`${DEMO.length-d.length} הוסרו → ${d.length} ייחודיות`,'✅ ולידציה'],
+        ['1.4 Pareto',Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—','CAPA ממוקד'],
+        ['1.5 פעילות',`${d.filter(r=>r.status==='סגור').length} סגורות | ${d.filter(r=>r.status==='פתוח').length} פתוחות`,'סגירת פתוחות'],
+        ['1.6 AS9100',(()=>{const c={};d.forEach(r=>{const cat=classifyAS9100(r);c[cat]=(c[cat]||0)+1;});return AS9100_CATS[+Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]]||'—';})(),'עיין בסיווג'],
+        ['1.7 RCA',topRca[0]+' ('+topRca[1]+')','CAPA מניעתי'],
+        ['Quality Risk Index',d.filter(r=>r.status==='פתוח').length/d.length>=0.4?'HIGH 🔴':d.filter(r=>r.status==='פתוח').length/d.length>=0.2?'MEDIUM 🟡':'LOW 🟢','—'],
+      ])}
+    </div>`,
   };
   renderResult(
-    resultHeader(9,`דוח ${type}`,'פורמט Aviation A4 לפי AS9100 IAI Practice') +
-    (templates[type]||'') +
+    resultHeader(9,`1.9 דוח ${type}`,'AS9100 / IAI Practice | Ver_10') +
+    (templates[type]||`<div class="insight-box">⚠ סוג דוח "${type}" אינו זמין.</div>`) +
     `<div class="insight-box"><strong>📌 הערה:</strong> הדוח מוצג כתבנית. יש להשלים פרטים ספציפיים לפי הנתונים המלאים.</div>` +
+    `<div style="margin-top:10px;"><button onclick="showStep9Choice()" class="btn-run" style="font-size:.82rem;padding:6px 14px;">⬅ חזור לבחירת דוח</button></div>` +
     nextHint(9)
   );
   markDone(9);
 }
 
-/* ══ STEP 10 – Executive Summary ══ */
+/* ══ STEP 10 – 1.10 Executive Summary ══ */
 function runStep10(){
   const d = dedupedData || DEMO;
-  const projects = [...new Set(d.map(r=>r.project))];
-  const catCnt = {}; d.forEach(r=>{ catCnt[r.rca||'Unknown']=(catCnt[r.rca||'Unknown']||0)+1; });
-  const topRca  = Object.entries(catCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
-  const matCnt  = {}; d.forEach(r=>{ matCnt[r.material]=(matCnt[r.material]||0)+1; });
-  const topMat  = Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
-  const zvData  = d.filter(r=>r.type==='ZV');
-  const suppCnt = {}; zvData.forEach(r=>{ suppCnt[r.supplier||'ללא']=(suppCnt[r.supplier||'ללא']||0)+1; });
-  const topSupp = Object.entries(suppCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
-  const open    = d.filter(r=>r.status==='פתוח').length;
-  const hotThres= Math.max(3, d.length*0.10);
-  const hots    = Object.entries(matCnt).filter(([,v])=>v>=hotThres);
+  const projects=[...new Set(d.map(r=>r.project))];
+  const catCnt={}; d.forEach(r=>{catCnt[r.rca||'Unknown']=(catCnt[r.rca||'Unknown']||0)+1;});
+  const topRca=Object.entries(catCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const matCnt={}; d.forEach(r=>{matCnt[r.material]=(matCnt[r.material]||0)+1;});
+  const topMat=Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const zvData=d.filter(r=>r.type==='ZV');
+  const suppCnt={}; zvData.forEach(r=>{suppCnt[r.supplier||'ללא']=(suppCnt[r.supplier||'ללא']||0)+1;});
+  const topSupp=Object.entries(suppCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const open=d.filter(r=>r.status==='פתוח').length;
+  const hotThres=Math.max(3,d.length*0.10);
+  const hots=Object.entries(matCnt).filter(([,v])=>v>=hotThres).sort((a,b)=>b[1]-a[1]);
+  const {typeA}=detectRecurring(d);
+  const riskPct=open/d.length;
+  const riskLevel=riskPct>=0.4?'HIGH 🔴':riskPct>=0.2?'MEDIUM 🟡':'LOW 🟢';
+
+  const suppRiskRows=Object.entries(suppCnt).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([s,v],i)=>{
+    const pct=((v/(zvData.length||1))*100).toFixed(1);
+    const risk=v/(zvData.length||1)>0.20?'<span class="risk-high">HIGH</span>':
+               v/(zvData.length||1)>=0.10?'<span class="risk-medium">MEDIUM</span>':
+               '<span class="risk-low">LOW</span>';
+    return [i+1,s,v,pct+'%',risk];
+  });
 
   renderResult(
-    resultHeader(10,'Executive Summary','סיכום ניהולי – כל הניתוחים') +
+    resultHeader(10,'1.10 Executive Summary','סיכום ניהולי מלא לפי Ver_10') +
     `<div class="result-block">
       <div class="result-block-title">📊 KPIs מרכזיים</div>
       ${tbl(['KPI','ערך','הערה'],[
-        ['סה"כ תקלות',d.length,'לאחר Deduplication'],
-        ['פרויקטים',projects.length, projects.join(', ')],
-        ['תקלות פתוחות',open,`${((open/d.length)*100).toFixed(0)}% מהכולל`],
-        ['Hot Spots',hots.length,hots.map(([k])=>k.slice(0,20)).join(', ')||'אין'],
-        ['תקלות ספק (ZV)',zvData.length,`${((zvData.length/d.length)*100).toFixed(0)}% מהכולל`],
-        ['Top Material',topMat[0],`${topMat[1]} תקלות`],
-        ['Top RCA',topRca[0],`${topRca[1]} תקלות`],
-        ['Top Supplier',topSupp[0],`${topSupp[1]} תקלות ZV`],
+        ['סה"כ לפני Dedup',DEMO.length,'כל הרשומות'],
+        ['תקלות ייחודיות',d.length,'לאחר Dedup'],
+        ['פרויקטים',projects.length,projects.join(', ')],
+        ['הודעות פתוחות',open,((open/d.length)*100).toFixed(0)+'%'],
+        ['Hot Spots (≥10% או ≥3)',hots.length,hots.slice(0,3).map(([k])=>k.slice(0,18)).join(', ')||'אין'],
+        ['תקלות ספק (ZV)',zvData.length,((zvData.length/d.length)*100).toFixed(0)+'%'],
+        ['Top Material',topMat[0].slice(0,25),topMat[1]+' תקלות'],
+        ['Top RCA',topRca[0],topRca[1]+' תקלות'],
+        ['Top Supplier (ZV)',topSupp[0].slice(0,25),topSupp[1]+' תקלות ZV'],
+        ['תקלות חוזרות (סוג א)',typeA.length,'ראה דוח H'],
+        ['Quality Risk Index',riskLevel,'מבוסס % פתוחות + Recurrence'],
       ])}
     </div>` +
     `<div class="result-block">
-      <div class="result-block-title">⚡ המלצות פעולה מיידיות</div>
-      ${tbl(['עדיפות','נושא','פעולה מומלצת'],[
-        ['🔴 1','Hot Spot – '+topMat[0].slice(0,25),'חקירת שורש + CAPA מיידי'],
-        ['🔴 2','תקלות פתוחות – '+open+' הודעות','סיום טיפול + תיעוד סגירה'],
-        ['🟡 3','RCA – '+topRca[0],'יישום CAPA מניעתי + עדכון נוהל'],
-        ['🟡 4',zvData.length+' תקלות ספק','בדיקת SCAR + Supplier Audit'],
-        ['🟢 5','Recurrence – תקלות חוזרות','Lessons Learned + עדכון FMEA'],
+      <div class="result-block-title">🎯 Hot Spot Detection (≥10% או ≥3 תקלות)</div>
+      ${hots.length?tbl(['#','חומר','כמות','%','סיכון'],
+        hots.map(([m,v],i)=>[i+1,m,v,((v/d.length)*100).toFixed(1)+'%',
+          v/d.length>=0.20?'<span class="risk-high">HIGH</span>':
+          v/d.length>=0.10?'<span class="risk-medium">MEDIUM</span>':'<span class="risk-low">LOW</span>']))
+        :'<p style="color:var(--muted)">לא זוהו Hot Spots.</p>'}
+    </div>` +
+    (zvData.length?`<div class="result-block">
+      <div class="result-block-title">🏭 Supplier Risk Analysis</div>
+      ${tbl(['#','ספק','כמות','%','Supplier Risk'],suppRiskRows)}
+    </div>`:'') +
+    `<div class="result-block">
+      <div class="result-block-title">⚡ המלצות פעולה – מיידיות ולטווח רחוק</div>
+      ${tbl(['עדיפות','נושא','פעולה מומלצת','לוח זמנים'],[
+        ['🔴 1','Hot Spot – '+topMat[0].slice(0,20),'חקירת שורש + CAPA מיידי','48 שעות'],
+        ['🔴 2',open+' תקלות פתוחות','סיום טיפול + תיעוד סגירה','שבוע'],
+        ['🟡 3','RCA – '+topRca[0],'יישום CAPA מניעתי + עדכון FMEA','30 יום'],
+        ['🟡 4',zvData.length+' תקלות ספק (ZV)','Supplier SCAR + Audit','30 יום'],
+        ['🟢 5',typeA.length+' סוגי חומר חוזרים','Lessons Learned + FMEA','90 יום'],
+        ['🟢 6','עדכון נהלים','SOPs לפי Corrective Actions','180 יום'],
       ])}
     </div>` +
     `<div class="insight-box" style="background:#1a2d1a;border-color:#23863660;color:#7ee787;">
-      <strong>✅ הניתוח הושלם בהצלחה.</strong><br/>
-      סה"כ <strong>${d.length}</strong> תקלות נותחו עבור <strong>${projects.length}</strong> פרויקטים.<br/>
-      Quality Risk Index: <strong>${open/d.length>=0.4?'HIGH 🔴':open/d.length>=0.2?'MEDIUM 🟡':'LOW 🟢'}</strong>
+      <strong>✅ הניתוח הושלם בהצלחה (FRACAS Ver_10).</strong><br/>
+      סה"כ <strong>${d.length}</strong> תקלות ייחודיות | פרויקט: <strong>${projects.join(', ')}</strong><br/>
+      Quality Risk Index: <strong>${riskLevel}</strong><br/>
+      💡 לייצוא Word/PowerPoint – השתמש בכפתור "העתק" בכל בלוק.
     </div>`
   );
   markDone(10);
 }
 
-/* ══ Dispatcher ══ */
+/* ══ Dispatcher Ver_10 ══
+   1=1.1 קבלת נתונים, 2=1.2 סוגי הודעה, 3=1.3 כפולות
+   4=1.4 Pareto(choice), 5=1.5 פעילות מתקנת, 6=1.6 AS9100
+   7=1.7 RCA, 8=1.8 CAPA, 9=1.9 דוחות(choice), 10=1.10 Executive
+   ═══════════════════════════════════════════════════════ */
 function runStepN(n){
-  const fns = [null, runStep1, runStep2, null, runStep4, runStep5,
-               runStep6, runStep7, runStep8, null, runStep10];
+  const fns=[null,runStep1,runStep2,runStep3,null,runStep5,runStep6,runStep7,runStep8,null,runStep10];
   if(fns[n]) fns[n]();
 }
 
