@@ -754,6 +754,314 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       background: #1f2d44;
     }
     .upload-zone input[type=file] { display: none; }
+    .file-input-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      border: 0 !important;
+      opacity: 0 !important;
+    }
+    label.btn-parse {
+      display: inline-block;
+      text-align: center;
+      line-height: normal;
+      box-sizing: border-box;
+    }
+
+    /* ── Data grid fullscreen mode (max viewport) ──── */
+    body.dg-mode {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+    body.dg-mode .header { display: none !important; }
+    body.dg-mode .footer { display: none !important; }
+    body.dg-mode .nav {
+      flex-shrink: 0;
+      padding: 0 8px;
+      min-height: 0;
+    }
+    body.dg-mode .nav-btn {
+      padding: 6px 10px;
+      font-size: .75rem;
+    }
+    body.dg-mode main {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    #tab-data.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+    .dg-shell {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 4px 6px 4px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .dg-topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      margin-bottom: 4px;
+      min-height: 28px;
+    }
+    .dg-topbar h2 {
+      margin: 0;
+      font-size: .92rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .dg-topbar .dg-hint { display: none; }
+
+    /* ── Data grid (Excel-like) ─────────────────────── */
+    .dg-toolbar {
+      flex-shrink: 0;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      margin-bottom: 4px;
+    }
+    .dg-toolbar .dg-count { color: var(--muted); font-size: .8rem; margin-right: auto; }
+    .dg-toolbar .dg-count strong { color: #79c0ff; }
+    .dg-global-search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 180px;
+      max-width: none;
+    }
+    .dg-global-search label {
+      color: var(--muted);
+      font-size: .75rem;
+      white-space: nowrap;
+    }
+    .dg-global-search input {
+      flex: 1;
+      min-width: 0;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #e6edf3;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: .82rem;
+    }
+    .dg-global-search input:focus {
+      outline: none;
+      border-color: #d29922;
+      box-shadow: 0 0 0 2px #d2992233;
+    }
+    .dg-global-search input::placeholder { color: #6e7681; }
+    .dg-hl {
+      background: #ffe066;
+      color: #1a1a1a;
+      border-radius: 2px;
+      padding: 0 1px;
+      font-weight: 700;
+      box-shadow: 0 0 0 1px #e6c20055;
+    }
+    .dg-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+    }
+    body.dg-mode .dg-wrap {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+    }
+    body.dg-mode .dg-toolbar .export-btn {
+      padding: 4px 10px;
+      font-size: .75rem;
+    }
+    .dg-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: max-content;
+      min-width: 100%;
+      font-size: .82rem;
+    }
+    .dg-table th {
+      position: sticky; top: 0; z-index: 3;
+      background: #161b22;
+      color: #e6edf3;
+      border-bottom: 1px solid var(--border);
+      border-left: 1px solid #21262d;
+      padding: 0;
+      white-space: nowrap;
+      vertical-align: top;
+      min-width: 140px;
+    }
+    .dg-table th:first-child, .dg-table td:first-child {
+      position: sticky; right: 0; z-index: 4;
+      background: #161b22;
+      box-shadow: -2px 0 6px rgba(0,0,0,.25);
+    }
+    .dg-table td:first-child { z-index: 2; background: var(--card); }
+    .dg-th-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 6px; padding: 8px 10px 4px; cursor: pointer; user-select: none;
+    }
+    .dg-th-top:hover { color: #58a6ff; }
+    .dg-sort { color: var(--muted); font-size: .7rem; }
+    .dg-filter-cell { padding: 4px 8px 8px; position: relative; }
+    .dg-filter-cell input[type=text] {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #c9d1d9;
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: .75rem;
+    }
+    .dg-filter-cell input[type=text]:focus {
+      outline: none; border-color: #388bfd;
+    }
+    .dg-list-btn {
+      width: 100%;
+      margin-top: 4px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #c9d1d9;
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: .74rem;
+      cursor: pointer;
+      text-align: right;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .dg-list-btn:hover { border-color: #388bfd; color: #79c0ff; }
+    .dg-list-btn.active {
+      border-color: #388bfd;
+      background: #388bfd18;
+      color: #79c0ff;
+    }
+    .dg-list-btn .dg-list-summary {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
+    }
+    .dg-pop {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 40;
+      width: min(320px, 90vw);
+      max-height: min(55vh, 520px);
+      background: #161b22;
+      border: 1px solid #388bfd88;
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.45);
+      padding: 8px;
+    }
+    .dg-pop.open { display: flex; flex-direction: column; }
+    .dg-pop-search {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: #c9d1d9;
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: .75rem;
+      margin-bottom: 6px;
+    }
+    .dg-pop-actions {
+      display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;
+    }
+    .dg-pop-actions button {
+      flex: 1;
+      background: #21262d;
+      border: 1px solid var(--border);
+      color: #c9d1d9;
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: .72rem;
+      cursor: pointer;
+    }
+    .dg-pop-actions button:hover { border-color: #388bfd; color: #79c0ff; }
+    .dg-pop-list {
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      border: 1px solid #21262d;
+      border-radius: 5px;
+      padding: 4px;
+    }
+    .dg-pop-item {
+      display: flex; align-items: flex-start; gap: 6px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: .75rem;
+      color: #c9d1d9;
+    }
+    .dg-pop-item:hover { background: #1f2a3a; }
+    .dg-pop-item input { margin-top: 2px; accent-color: #388bfd; }
+    .dg-pop-item span { word-break: break-word; line-height: 1.3; }
+    .dg-pop-footer {
+      display: flex; gap: 6px; margin-top: 8px;
+    }
+    .dg-pop-footer button {
+      flex: 1;
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .dg-pop-ok { background: #238636; color: #fff; border-color: #238636 !important; }
+    .dg-pop-cancel { background: #21262d; color: #c9d1d9; }
+    .dg-table td {
+      border-bottom: 1px solid #21262d;
+      border-left: 1px solid #21262d;
+      padding: 8px 12px;
+      color: #c9d1d9;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dg-table tr:hover td { background: #1f2a3a; }
+    .dg-table tr:hover td:first-child { background: #1f2a3a; }
+    .dg-empty {
+      padding: 40px; text-align: center; color: var(--muted);
+    }
+    .dg-filtered-badge {
+      display: inline-block; background: #388bfd22; color: #79c0ff;
+      border: 1px solid #388bfd55; border-radius: 20px;
+      padding: 2px 10px; font-size: .75rem; font-weight: 700;
+    }
     .upload-icon { font-size: 3rem; margin-bottom: 12px; }
     .upload-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .upload-sub { font-size: .82rem; color: var(--muted); }
@@ -869,6 +1177,52 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     .data-source-badge.demo {
       background: #1a2744; color: #79c0ff; border-color: #1f6feb60;
     }
+    .data-source-badge.live {
+      background: #1a2d1a; color: #7ee787; border-color: #23863660;
+    }
+    .data-source-badge.warn {
+      background: #2d1e0a; color: #ffa657; border-color: #d2992260;
+    }
+    .live-source-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+    .live-source-panel h3 {
+      font-size: .95rem; color: #fff; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .live-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
+    }
+    .live-dot.ok { background: #3fb950; box-shadow: 0 0 6px #3fb95088; }
+    .live-dot.loading { background: #d29922; animation: pulseDot 1s infinite; }
+    .live-dot.err { background: #f85149; }
+    .live-dot.off { background: #8b949e; }
+    @keyframes pulseDot {
+      0%,100% { opacity: 1; } 50% { opacity: .35; }
+    }
+    .live-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px 16px;
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .live-meta strong { color: #c9d1d9; font-weight: 600; }
+    .live-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .live-actions input[type=text] {
+      background: #0d1117; border: 1px solid var(--border); color: #c9d1d9;
+      border-radius: 6px; padding: 6px 10px; font-size: .82rem; min-width: 220px; flex: 1;
+    }
+    .live-actions input[type=number] {
+      background: #0d1117; border: 1px solid var(--border); color: #c9d1d9;
+      border-radius: 6px; padding: 6px 8px; font-size: .82rem; width: 70px;
+    }
 
   /* ── Print / Export styles ──────────────────────────── */
   #printRoot { display: none; }
@@ -935,6 +1289,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <!-- ══════════════════ NAV ══════════════════ -->
 <nav class="nav">
   <button class="nav-btn" data-tab="upload" style="color:#7ee787;">📤 העלאת נתונים</button>
+  <button class="nav-btn" data-tab="data" style="color:#79c0ff;">📋 בסיס נתונים</button>
   <button class="nav-btn active" data-tab="wizard" style="color:#ffa657;">🔬 ניתוח FRACAS</button>
   <button class="nav-btn" data-tab="charts">📊 גרפים</button>
   <button class="nav-btn" data-tab="overview">מדריך</button>
@@ -954,28 +1309,70 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;">
     <h2 class="section-title" style="margin-bottom:0;flex:1;">📤 העלאת נתוני FRACAS</h2>
-    <span id="dataSourceBadge" class="data-source-badge">📊 AI_unclassified.xlsx (72 שורות)</span>
+    <span id="dataSourceBadge" class="data-source-badge demo">📊 נתוני דמו מוטמעים</span>
+  </div>
+
+  <!-- Live shared data source -->
+  <div class="live-source-panel" id="liveSourcePanel">
+    <h3><span class="live-dot off" id="liveDot"></span> מקור נתונים קבוע (Excel/CSV משותף)</h3>
+    <div class="live-meta">
+      <div>סטטוס: <strong id="liveStatusText">ממתין לחיבור…</strong></div>
+      <div>קובץ: <strong id="liveFileName">—</strong></div>
+      <div>שורות: <strong id="liveRowCount">—</strong></div>
+      <div>רענון אחרון: <strong id="liveLastRefresh">—</strong></div>
+      <div>רענון אוטומטי: <strong id="liveRefreshInfo">כל 6 שעות</strong></div>
+    </div>
+    <div class="live-actions">
+      <input type="file" id="liveDbFileInput" accept=".csv,.xlsx,.xls,.txt" style="display:none;" />
+      <button class="export-btn" id="btnLivePickFile" style="border-color:#e3b341;color:#e3b341;font-weight:700;">📂 בחר קובץ בסיס נתונים</button>
+      <input type="text" id="liveDataUrl" placeholder="או הקלד שם קובץ / URL יחסי (למשל AI_unclassified.xlsx)" />
+      <label style="font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:4px;">
+        כל
+        <input type="number" id="liveRefreshHours" min="0" max="24" step="1" value="6" title="שעות בין רענונים (1–24). 0 = ללא רענון אוטומטי" />
+        שע׳
+      </label>
+      <button class="export-btn" id="btnLiveConnect" style="border-color:#238636;color:#7ee787;">🔗 התחבר / רענן</button>
+      <button class="export-btn" id="btnLiveSave" style="border-color:#388bfd;color:#79c0ff;">💾 שמור הגדרות</button>
+      <button class="export-btn" id="btnLiveClearDb" style="border-color:#da3633;color:#ff7b72;">🗑 נקה בחירה</button>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);margin-top:10px;line-height:1.5;">
+      <strong style="color:#e3b341;">בחר קובץ</strong> — בוחר Excel/CSV מהמחשב או מהרשת; הקובץ נשמר כמקור קבוע בדפדפן ונפתח אוטומטית בפעם הבאה.<br/>
+      <strong style="color:#7ee787;">התחבר / רענן</strong> — טוען מחדש לפי שם/URL (דורש <code>start-fracas.bat</code> או שרת HTTP) אם הקובץ זמין בתיקיית האפליקציה.<br/>
+      ניתן גם להקליד נתיב יחסי בתיבה ולשמור הגדרות.
+    </p>
   </div>
 
   <!-- Mode toggle: file vs paste -->
-  <div class="upload-mode-toggle">
-    <button class="umode-btn active" id="umodeFile">📁 קובץ (CSV / Excel)</button>
-    <button class="umode-btn" id="umodePaste">📋 הדבקת טבלה</button>
+  <div class="upload-mode-toggle" id="oneTimeModeToggle">
+    <button type="button" class="umode-btn active" id="umodeFile">📁 קובץ חד-פעמי (CSV / Excel)</button>
+    <button type="button" class="umode-btn" id="umodePaste">📋 הדבקת טבלה</button>
   </div>
 
   <!-- File upload zone -->
   <div id="fileSection">
+    <!-- Native label→input link (works without JS) -->
+    <input type="file" id="fileInput" class="file-input-hidden" accept=".csv,.xlsx,.xls,.txt"
+      onchange="window.handleOneTimeFileChange && window.handleOneTimeFileChange(this)" />
+
     <div class="upload-zone" id="dropZone">
-      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.txt" />
       <div class="upload-icon">📂</div>
-      <div class="upload-title">גרור קובץ לכאן, או לחץ לבחירה</div>
-      <div class="upload-sub">קבצים נתמכים: Excel (.xlsx, .xls) · CSV · TXT מופרד בטאב</div>
+      <div class="upload-title">גרור קובץ לכאן</div>
+      <div class="upload-sub">העלאה חד-פעמית לבדיקה / ניתוח</div>
       <div class="upload-formats">
         <span class="tag green">XLSX</span>
         <span class="tag green">XLS</span>
         <span class="tag">CSV</span>
         <span class="tag">TXT</span>
       </div>
+      <label for="fileInput" class="btn-parse" id="btnPickOneTime" style="margin-top:16px;cursor:pointer;">
+        📁 בחר קובץ חד-פעמי
+      </label>
+    </div>
+    <div style="margin-top:-8px;margin-bottom:16px;">
+      <button type="button" class="export-btn" id="btnPickOneTimeAlt" style="border-color:#388bfd;color:#79c0ff;"
+        onclick="window.openOneTimeFilePicker && window.openOneTimeFilePicker(event)">
+        📁 בחר קובץ (חלופי)
+      </button>
     </div>
   </div>
 
@@ -985,7 +1382,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       העתק טבלה מ-Excel (Ctrl+C) והדבק כאן. השורה הראשונה חייבת להיות כותרות עמודות.
     </p>
     <textarea class="paste-area" id="pasteArea" placeholder="הדבק כאן את הנתונים (Tab-separated או CSV)...&#10;&#10;לדוגמה:&#10;מספר הודעה&#9;תאריך פתיחה&#9;פרויקט&#9;סוג הודעה&#9;תיאור חומר&#9;...&#10;100000001&#9;01/01/2026&#9;הדס&#9;ZP&#9;GENERAL ASSEMBLY&#9;..."></textarea>
-    <button class="btn-parse" id="btnParse">🔍 נתח נתונים</button>
+    <button type="button" class="btn-parse" id="btnParse">🔍 נתח נתונים</button>
   </div>
 
   <!-- Status messages -->
@@ -1018,6 +1415,31 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     </div>
   </div>
 
+</div>
+</div>
+
+<!-- ─────────── TAB: DATA GRID ─────────── -->
+<div class="tab-pane" id="tab-data">
+<div class="dg-shell">
+  <div class="dg-toolbar">
+    <h2 style="margin:0;font-size:.92rem;font-weight:700;color:#fff;white-space:nowrap;">📋 בסיס נתונים</h2>
+    <span class="dg-filtered-badge" id="dgBadge">—</span>
+    <div class="dg-global-search">
+      <label for="dgGlobalSearch">🔍 חיפוש בכל השדות</label>
+      <input type="search" id="dgGlobalSearch" placeholder="הקלד טקסט לחיפוש בכל העמודות…" autocomplete="off" />
+    </div>
+    <span class="dg-count" id="dgCount">מציג <strong>0</strong> מתוך <strong>0</strong> שורות</span>
+    <button type="button" class="export-btn" id="btnDgClear" style="border-color:#d29922;color:#ffa657;">↺ נקה סינונים</button>
+    <button type="button" class="export-btn" id="btnDgExport" style="border-color:#238636;color:#7ee787;">⬇ ייצוא CSV (מסונן)</button>
+    <button type="button" class="export-btn" id="btnDgRefresh" style="border-color:#388bfd;color:#79c0ff;">🔄 רענן טבלה</button>
+  </div>
+  <div class="dg-wrap" id="dgWrap">
+    <div class="dg-empty" id="dgEmpty">טוען נתונים…</div>
+    <table class="dg-table" id="dgTable" style="display:none;">
+      <thead id="dgHead"></thead>
+      <tbody id="dgBody"></tbody>
+    </table>
+  </div>
 </div>
 </div>
 
@@ -1739,6 +2161,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 <div class="container">
 
   <!-- Filter Bar -->
+  <div id="chartsScopeBanner" class="insight-box" style="display:none;border-color:#388bfd66;background:#388bfd12;margin-bottom:12px;"></div>
   <div class="filter-bar">
     <div class="filter-group">
       <span class="filter-label">פרויקט</span>
@@ -1901,7 +2324,7 @@ const DEMO = (function(){
     const mo=parseInt((r.dt||'01/01/2025').split('/')[1]||'1')-1;
     return{id:r.id,project:'ירח',type:t,supplier:s,material:(r.m||'').trim(),
       dept:(r.dep||'').trim(),discovery:disc,rca:R[r.c]||'Unknown',
-      month:mo,status:(r.st||'').includes('פתוח')?'פתוח':'סגור',
+      date:r.dt||'', month:mo,status:(r.st||'').includes('פתוח')?'פתוח':'סגור',
       defectCode:r.dc||'',notifText:r.nt||'',rootCause:r.c||'',
       suppFault:r.sf||'',longAction:r.la||''};
   }
@@ -1982,7 +2405,19 @@ const DEMO = (function(){
 })();
 
 /* ── Export helpers (Word + PDF) ─────────────────── */
+/** Prefer single NCR form when present (exclude picker table). */
+function resolveExportHtml(htmlContent){
+  const form = document.getElementById('ncrFormPrint');
+  if(form && form.innerHTML.trim()){
+    const clone = form.cloneNode(true);
+    clone.querySelectorAll('.export-bar, .next-hint').forEach(function(el){ el.remove(); });
+    return clone.innerHTML;
+  }
+  return htmlContent;
+}
+
 function exportWord(title, htmlContent) {
+  htmlContent = resolveExportHtml(htmlContent);
   const wordHtml = `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word"
@@ -2020,6 +2455,7 @@ ${htmlContent}
 }
 
 function exportPDF(title, htmlContent) {
+  htmlContent = resolveExportHtml(htmlContent);
   const pr = document.getElementById('printRoot');
   pr.innerHTML = `<h2>${title}</h2>${htmlContent}<hr/><p style="font-size:8pt;color:#666;">הופק מ-FRACAS Dashboard | ${new Date().toLocaleDateString('he-IL')}</p>`;
   window.print();
@@ -2039,10 +2475,12 @@ let activeProject = 'all';
 let activeMonth   = 'all';
 
 function filteredData(){
-  return DEMO.filter(r =>
+  /* בסיס = סינון מלשונית בסיס נתונים, ואז פילטרי הגרפים */
+  const base = (typeof analysisBase === 'function') ? analysisBase() : (DEMO || []);
+  return base.filter(r =>
     activeTypes.has(r.type) &&
     (activeProject === 'all' || r.project === activeProject) &&
-    (activeMonth   === 'all' || r.month  === parseInt(activeMonth))
+    (activeMonth   === 'all' || r.month  === parseInt(activeMonth, 10))
   );
 }
 
@@ -2056,11 +2494,472 @@ navBtns.forEach(btn => {
     btn.classList.add('active');
     const pane = document.getElementById('tab-' + btn.dataset.tab);
     if(pane) pane.classList.add('active');
+    document.body.classList.toggle('dg-mode', btn.dataset.tab === 'data');
     if (btn.dataset.tab === 'charts')   initCharts();
     if (btn.dataset.tab === 'overview') animateKPIs();
     if (btn.dataset.tab === 'wizard')   { buildSidebar(); updateWizDataBar(); }
+    if (btn.dataset.tab === 'data')     renderDataGrid();
   });
 });
+
+/* ════════════════════════════════════════════════════
+   DATA GRID – Excel-like view + per-column filters
+   ════════════════════════════════════════════════════ */
+const DG_COLS = [
+  { key:'id',         label:'מספר הודעה',   w:120 },
+  { key:'date',       label:'תאריך פתיחה',  w:120 },
+  { key:'type',       label:'סוג הודעה',     w:90 },
+  { key:'status',     label:'סטטוס',         w:90 },
+  { key:'project',    label:'פרויקט',        w:100 },
+  { key:'material',   label:'תיאור חומר',    w:160 },
+  { key:'defectCode', label:'קוד פגם',       w:140 },
+  { key:'notifText',  label:'תיאור הודעה',   w:200 },
+  { key:'dept',       label:'מחלקה',         w:150 },
+  { key:'discovery',  label:'שלב גילוי',     w:120 },
+  { key:'supplier',   label:'ספק',           w:160 },
+  { key:'suppFault',  label:'אשמת ספק',      w:110 },
+  { key:'rca',        label:'RCA (5M)',      w:110 },
+  { key:'rootCause',  label:'סיבת פגם',      w:140 },
+  { key:'longAction', label:'טקסט פעילות ארוך', w:260 },
+];
+
+let dgTextFilters = {};   // key -> string
+let dgValueFilters = {};  // key -> Set of selected values | null/undefined = all
+let dgGlobalSearch = '';  // free-text across all columns
+let dgSortKey = 'id';
+let dgSortDir = 1;        // 1 asc, -1 desc
+let dgBuilt = false;
+let dgOpenPopKey = null;
+
+/** Normalize any date-like value to dd/mm/yyyy (Excel serial / Date / string). */
+function formatFracasDate(v){
+  if(v==null || v==='') return '';
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function fromExcelSerial(n){
+    if(!isFinite(n)) return null;
+    n = Number(n);
+    /* Excel serial days ~1954–2119 (exclude 9-digit notification IDs) */
+    if(n < 20000 || n > 80000) return null;
+    try {
+      if(typeof XLSX !== 'undefined' && XLSX.SSF && typeof XLSX.SSF.parse_date_code === 'function'){
+        const p = XLSX.SSF.parse_date_code(n);
+        if(p && p.y) return pad(p.d)+'/'+pad(p.m)+'/'+p.y;
+      }
+    } catch(e){}
+    const d = new Date(Math.round((n - 25569) * 86400 * 1000));
+    if(isNaN(d.getTime())) return null;
+    return pad(d.getUTCDate())+'/'+pad(d.getUTCMonth()+1)+'/'+d.getUTCFullYear();
+  }
+  if(Object.prototype.toString.call(v)==='[object Date]' && !isNaN(v.getTime())){
+    return pad(v.getDate())+'/'+pad(v.getMonth()+1)+'/'+v.getFullYear();
+  }
+  if(typeof v === 'number'){
+    const ex = fromExcelSerial(v);
+    if(ex) return ex;
+  }
+  const s = String(v).trim();
+  /* Already a proper date */
+  const m = s.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})(?:\s|$)/);
+  if(m){
+    const y = m[3].length===2 ? ('20'+m[3]) : m[3];
+    return pad(m[1])+'/'+pad(m[2])+'/'+y;
+  }
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return iso[3]+'/'+iso[2]+'/'+iso[1];
+  /* Numeric string = Excel serial (e.g. "45658" or "45658.0") */
+  if(/^\d{4,5}(\.\d+)?$/.test(s)){
+    const ex = fromExcelSerial(parseFloat(s));
+    if(ex) return ex;
+  }
+  return s;
+}
+
+function dgDateSortValue(r){
+  const s = formatFracasDate(r.date || r.dt || '');
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m) return (+m[3])*10000 + (+m[2])*100 + (+m[1]);
+  return 0;
+}
+
+function dgCell(r, key){
+  if(key === 'supplier') return r.supplier || 'ללא ספק';
+  if(key === 'date') return formatFracasDate(r.date || r.dt || '');
+  const v = r[key];
+  return (v==null || v==='') ? '' : String(v);
+}
+
+function dgEscape(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/** Highlight all occurrences of query in text (case-insensitive), yellow mark */
+function dgHighlight(text, query){
+  const raw = String(text==null?'':text);
+  const q = (query||'').trim();
+  if(!q) return dgEscape(raw);
+  const lower = raw.toLowerCase();
+  const ql = q.toLowerCase();
+  let out = '', i = 0, idx;
+  while((idx = lower.indexOf(ql, i)) !== -1){
+    out += dgEscape(raw.slice(i, idx));
+    out += '<mark class="dg-hl">'+dgEscape(raw.slice(idx, idx+q.length))+'</mark>';
+    i = idx + q.length;
+  }
+  out += dgEscape(raw.slice(i));
+  return out;
+}
+
+function dgRowMatchesGlobal(r, q){
+  const ql = (q||'').trim().toLowerCase();
+  if(!ql) return true;
+  return DG_COLS.some(col => dgCell(r, col.key).toLowerCase().includes(ql));
+}
+
+function dgUniqueValues(key){
+  const set = new Set();
+  (DEMO||[]).forEach(r => {
+    const v = dgCell(r, key).trim();
+    if(v) set.add(v);
+  });
+  return [...set].sort(function(a,b){ return a.localeCompare(b, 'he'); });
+}
+
+function dgHasListFilter(key){
+  const s = dgValueFilters[key];
+  return !!(s && s instanceof Set && s.size > 0);
+}
+
+function dgListSummary(key){
+  const all = dgUniqueValues(key);
+  const s = dgValueFilters[key];
+  if(!s || !(s instanceof Set) || s.size===0 || s.size===all.length) return 'הכל ▾';
+  if(s.size===1) return [...s][0].slice(0,18) + ( [...s][0].length>18?'…':'') + ' ▾';
+  return s.size + ' נבחרו ▾';
+}
+
+function dgFilteredRows(){
+  let rows = (DEMO||[]).slice();
+  const gq = (dgGlobalSearch||'').trim();
+  if(gq){
+    rows = rows.filter(r => dgRowMatchesGlobal(r, gq));
+  }
+  DG_COLS.forEach(col => {
+    const t = (dgTextFilters[col.key]||'').trim().toLowerCase();
+    const s = dgValueFilters[col.key];
+    if(t){
+      rows = rows.filter(r => dgCell(r, col.key).toLowerCase().includes(t));
+    }
+    if(s && s instanceof Set && s.size > 0){
+      const all = dgUniqueValues(col.key);
+      if(s.size < all.length){
+        rows = rows.filter(r => s.has(dgCell(r, col.key)));
+      }
+    }
+  });
+  rows.sort(function(a,b){
+    if(dgSortKey === 'date'){
+      return (dgDateSortValue(a) - dgDateSortValue(b)) * dgSortDir;
+    }
+    const av = dgCell(a, dgSortKey);
+    const bv = dgCell(b, dgSortKey);
+    const an = parseFloat(av), bn = parseFloat(bv);
+    if(!isNaN(an) && !isNaN(bn) && String(av).trim()!=='' && String(bv).trim()!==''){
+      return (an-bn) * dgSortDir;
+    }
+    return av.localeCompare(bv, 'he') * dgSortDir;
+  });
+  return rows;
+}
+
+/** בסיס לניתוח FRACAS = השורות המסוננות בלשונית בסיס נתונים */
+function analysisBase(){
+  return dgFilteredRows();
+}
+/** לאחר שלב 1.3: dedup על הבסיס המסונן; אחרת הבסיס המסונן */
+function analysisData(){
+  return dedupedData || analysisBase();
+}
+function analysisScopeBanner(){
+  const full = (DEMO||[]).length;
+  const baseLen = analysisBase().length;
+  const fc = dgActiveFilterCount();
+  if(!full || !fc || baseLen === full) return '';
+  return `<div class="insight-box" style="border-color:#388bfd66;background:#388bfd12;">
+    <strong>🔍 הניתוח רץ על בסיס מסונן:</strong> ${baseLen} מתוך ${full} שורות (סינון מלשונית «בסיס נתונים»).
+  </div>`;
+}
+function dgInvalidateAnalysis(){
+  try { if(typeof window.__fracasResetDedup === 'function') window.__fracasResetDedup(); } catch(e){}
+  try { if(typeof updateWizDataBar === 'function') updateWizDataBar(); } catch(e){}
+  try { if(typeof refreshChartsFromGrid === 'function') refreshChartsFromGrid(); } catch(e){}
+}
+
+function dgActiveFilterCount(){
+  let n = 0;
+  if((dgGlobalSearch||'').trim()) n++;
+  DG_COLS.forEach(col => {
+    if((dgTextFilters[col.key]||'').trim()) n++;
+    if(dgHasListFilter(col.key)){
+      const all = dgUniqueValues(col.key);
+      const s = dgValueFilters[col.key];
+      if(s.size < all.length) n++;
+    }
+  });
+  return n;
+}
+
+function dgCloseAllPops(){
+  document.querySelectorAll('.dg-pop.open').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.dg-list-btn.active').forEach(b => b.classList.remove('active'));
+  dgOpenPopKey = null;
+}
+
+function dgApplyListFilterFromPop(key, pop){
+  if(!pop) pop = document.querySelector('.dg-pop[data-pop-key="'+key+'"]');
+  if(!pop) return;
+  const checked = [...pop.querySelectorAll('input[type=checkbox][data-val]:checked')]
+    .map(cb => cb.getAttribute('data-val'));
+  const all = dgUniqueValues(key);
+  if(checked.length === 0 || checked.length === all.length){
+    delete dgValueFilters[key];
+  } else {
+    dgValueFilters[key] = new Set(checked);
+  }
+  dgInvalidateAnalysis();
+  renderDataGridBodyOnly();
+}
+
+function dgApplyListFilter(key){
+  dgApplyListFilterFromPop(key);
+}
+
+function buildDataGridHeader(){
+  const head = document.getElementById('dgHead');
+  if(!head) return;
+  dgCloseAllPops();
+  let html = '<tr>';
+  DG_COLS.forEach(col => {
+    const sortMark = dgSortKey===col.key ? (dgSortDir>0?' ▲':' ▼') : '';
+    const uniques = dgUniqueValues(col.key);
+    const selected = dgValueFilters[col.key];
+    const isFiltered = selected && selected instanceof Set && selected.size>0 && selected.size<uniques.length;
+    const items = uniques.map(u => {
+      const checked = !selected || !(selected instanceof Set) || selected.size===0 || selected.has(u);
+      return '<label class="dg-pop-item" data-label="'+dgEscape(u.toLowerCase())+'">'+
+        '<input type="checkbox" data-val="'+dgEscape(u)+'"'+(checked?' checked':'')+' />'+
+        '<span title="'+dgEscape(u)+'">'+dgEscape(u)+'</span></label>';
+    }).join('');
+
+    html += '<th style="min-width:'+col.w+'px">'+
+      '<div class="dg-th-top" data-sort="'+col.key+'" title="לחץ למיון">'+
+        '<span>'+col.label+'</span><span class="dg-sort">'+sortMark+'</span>'+
+      '</div>'+
+      '<div class="dg-filter-cell">'+
+        '<input type="text" data-dg-text="'+col.key+'" placeholder="חיפוש חופשי…" value="'+dgEscape(dgTextFilters[col.key]||'')+'" />'+
+        '<button type="button" class="dg-list-btn'+(isFiltered?' active':'')+'" data-dg-list="'+col.key+'" title="בחר ערכים מהרשימה">'+
+          '<span class="dg-list-summary">'+dgEscape(dgListSummary(col.key))+'</span>'+
+        '</button>'+
+        '<div class="dg-pop" data-pop-key="'+col.key+'">'+
+          '<input type="text" class="dg-pop-search" placeholder="חפש ברשימה…" />'+
+          '<div class="dg-pop-actions">'+
+            '<button type="button" data-act="all">בחר הכל</button>'+
+            '<button type="button" data-act="none">נקה</button>'+
+          '</div>'+
+          '<div class="dg-pop-list">'+(items || '<div style="padding:8px;color:#8b949e;font-size:.75rem;">אין ערכים</div>')+'</div>'+
+        '</div>'+
+      '</div>'+
+    '</th>';
+  });
+  html += '</tr>';
+  head.innerHTML = html;
+
+  head.querySelectorAll('.dg-th-top').forEach(el => {
+    el.addEventListener('click', function(){
+      const k = el.getAttribute('data-sort');
+      if(dgSortKey === k) dgSortDir = -dgSortDir;
+      else { dgSortKey = k; dgSortDir = 1; }
+      renderDataGrid();
+    });
+  });
+
+  head.querySelectorAll('input[data-dg-text]').forEach(inp => {
+    inp.addEventListener('input', function(){
+      dgTextFilters[inp.getAttribute('data-dg-text')] = inp.value;
+      dgInvalidateAnalysis();
+      renderDataGridBodyOnly();
+    });
+  });
+
+  head.querySelectorAll('.dg-list-btn').forEach(btn => {
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const key = btn.getAttribute('data-dg-list');
+      const pop = head.querySelector('.dg-pop[data-pop-key="'+key+'"]');
+      const wasOpen = pop && pop.classList.contains('open');
+      dgCloseAllPops();
+      if(!wasOpen && pop){
+        pop.classList.add('open');
+        btn.classList.add('active');
+        dgOpenPopKey = key;
+        const search = pop.querySelector('.dg-pop-search');
+        if(search){ search.value=''; setTimeout(function(){ search.focus(); }, 30); }
+      }
+    });
+  });
+
+  head.querySelectorAll('.dg-pop').forEach(pop => {
+    const key = pop.getAttribute('data-pop-key');
+    pop.addEventListener('click', function(e){ e.stopPropagation(); });
+
+    const search = pop.querySelector('.dg-pop-search');
+    if(search){
+      search.addEventListener('input', function(){
+        const q = search.value.trim().toLowerCase();
+        pop.querySelectorAll('.dg-pop-item').forEach(item => {
+          const lab = item.getAttribute('data-label')||'';
+          item.style.display = (!q || lab.includes(q)) ? 'flex' : 'none';
+        });
+      });
+    }
+
+    // Apply immediately on checkbox change
+    pop.querySelectorAll('input[type=checkbox][data-val]').forEach(cb => {
+      cb.addEventListener('change', function(e){
+        e.stopPropagation();
+        dgApplyListFilterFromPop(key, pop);
+      });
+    });
+
+    pop.querySelectorAll('[data-act]').forEach(b => {
+      b.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        const act = b.getAttribute('data-act');
+        if(act==='all'){
+          pop.querySelectorAll('.dg-pop-item').forEach(item => {
+            if(item.style.display==='none') return;
+            const cb = item.querySelector('input[type=checkbox]');
+            if(cb) cb.checked = true;
+          });
+          dgApplyListFilterFromPop(key, pop);
+        } else if(act==='none'){
+          pop.querySelectorAll('.dg-pop-item input[type=checkbox]').forEach(cb => { cb.checked = false; });
+          dgApplyListFilterFromPop(key, pop);
+        }
+      });
+    });
+  });
+}
+
+function renderDataGridBodyOnly(){
+  const body = document.getElementById('dgBody');
+  const table = document.getElementById('dgTable');
+  const empty = document.getElementById('dgEmpty');
+  const count = document.getElementById('dgCount');
+  const badge = document.getElementById('dgBadge');
+  if(!body) return;
+
+  const total = (DEMO||[]).length;
+  const rows = dgFilteredRows();
+
+  if(!total){
+    if(table) table.style.display = 'none';
+    if(empty){ empty.style.display='block'; empty.textContent='אין נתונים להצגה. טען קובץ בלשונית העלאה.'; }
+    if(count) count.innerHTML = 'מציג <strong>0</strong> מתוך <strong>0</strong> שורות';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  if(table) table.style.display = 'table';
+
+  body.innerHTML = rows.map(function(r){
+    return '<tr>'+ DG_COLS.map(function(col){
+      const val = dgCell(r, col.key);
+      const title = dgEscape(val);
+      const gq = (dgGlobalSearch||'').trim();
+      const maxLen = gq ? 200 : 80;
+      const short = val.length>maxLen ? val.slice(0,maxLen)+'…' : val;
+      const html = gq ? dgHighlight(short, gq) : dgEscape(short);
+      return '<td title="'+title+'">'+html+'</td>';
+    }).join('') + '</tr>';
+  }).join('');
+
+  if(count) count.innerHTML = 'מציג <strong>'+rows.length+'</strong> מתוך <strong>'+total+'</strong> שורות';
+  if(badge){
+    const fc = dgActiveFilterCount();
+    badge.textContent = fc ? ('סינון פעיל · '+fc+' עמודות · '+rows.length+'/'+total) : ('כל השורות · '+total);
+  }
+
+  // Update list button summaries without rebuilding header (keeps pop open if needed)
+  document.querySelectorAll('.dg-list-btn').forEach(btn => {
+    const key = btn.getAttribute('data-dg-list');
+    const sum = btn.querySelector('.dg-list-summary');
+    if(sum) sum.textContent = dgListSummary(key);
+    const all = dgUniqueValues(key);
+    const s = dgValueFilters[key];
+    const filtered = s && s instanceof Set && s.size>0 && s.size<all.length;
+    btn.classList.toggle('active', !!filtered || dgOpenPopKey===key);
+  });
+}
+
+function renderDataGrid(){
+  if(!(DEMO||[]).length){
+    const empty = document.getElementById('dgEmpty');
+    const table = document.getElementById('dgTable');
+    if(table) table.style.display='none';
+    if(empty){ empty.style.display='block'; empty.textContent='אין נתונים להצגה.'; }
+    return;
+  }
+  buildDataGridHeader();
+  renderDataGridBodyOnly();
+  dgBuilt = true;
+}
+
+function clearDataGridFilters(){
+  dgTextFilters = {};
+  dgValueFilters = {};
+  dgGlobalSearch = '';
+  const gInp = document.getElementById('dgGlobalSearch');
+  if(gInp) gInp.value = '';
+  dgSortKey = 'id';
+  dgSortDir = 1;
+  dgCloseAllPops();
+  dgInvalidateAnalysis();
+  renderDataGrid();
+}
+
+function exportDataGridCsv(){
+  const rows = dgFilteredRows();
+  const headers = DG_COLS.map(c=>c.label);
+  function csvEsc(v){
+    const s = String(v==null?'':v).replace(/"/g,'""');
+    return '"'+s+'"';
+  }
+  const lines = [headers.map(csvEsc).join(',')];
+  rows.forEach(r => {
+    lines.push(DG_COLS.map(c => csvEsc(dgCell(r,c.key))).join(','));
+  });
+  const blob = new Blob(['\ufeff'+lines.join('\r\n')], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'FRACAS_filtered_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 800);
+}
+
+document.getElementById('btnDgClear')?.addEventListener('click', clearDataGridFilters);
+document.getElementById('btnDgExport')?.addEventListener('click', exportDataGridCsv);
+document.getElementById('btnDgRefresh')?.addEventListener('click', renderDataGrid);
+document.getElementById('dgGlobalSearch')?.addEventListener('input', function(){
+  dgGlobalSearch = this.value || '';
+  dgInvalidateAnalysis();
+  renderDataGridBodyOnly();
+});
+document.addEventListener('click', function(){ dgCloseAllPops(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') dgCloseAllPops(); });
 
 /* ── Animated KPI counters (overview tab) ─────────── */
 function animateKPIs(){
@@ -2123,7 +3022,31 @@ function buildCharts(){
   cDisc     = new Chart(document.getElementById('discoveryChart'),    { type:'bar',      data:{labels:[],datasets:[]}, options: discOpts() });
 }
 
+function refreshChartsFromGrid(){
+  updateChartsScopeBanner();
+  if(chartsInit && cPareto) refreshAll();
+}
+
+function updateChartsScopeBanner(){
+  const el = document.getElementById('chartsScopeBanner');
+  if(!el) return;
+  const full = (DEMO||[]).length;
+  let baseLen = full;
+  try { baseLen = analysisBase().length; } catch(e){}
+  let fc = 0;
+  try { fc = dgActiveFilterCount(); } catch(e){}
+  if(full && fc && baseLen !== full){
+    el.style.display = 'block';
+    el.innerHTML = '<strong>🔍 הגרפים מבוססים על בסיס מסונן:</strong> ' +
+      baseLen + ' מתוך ' + full + ' שורות (סינון מלשונית «בסיס נתונים»). פילטרי הפרויקט/חודש/סוג למטה מצמצמים עוד.';
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
 function refreshAll(){
+  updateChartsScopeBanner();
   const d = filteredData();
   updateKPIStrip(d);
   updatePareto(d);
@@ -2326,28 +3249,29 @@ function updateSupplierTable(d){
 }
 
 /* ── Filter event listeners ──────────────────────────── */
-document.getElementById('filterProject').addEventListener('change', e => {
-  activeProject = e.target.value; refreshAll();
-});
-document.getElementById('filterMonth').addEventListener('change', e => {
-  activeMonth = e.target.value; refreshAll();
-});
-document.querySelectorAll('.filter-chip[data-type]').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const t = chip.dataset.type;
-    if(activeTypes.has(t)){ activeTypes.delete(t); chip.classList.remove('active'); }
-    else                   { activeTypes.add(t);    chip.classList.add('active');    }
+try {
+  const fp = document.getElementById('filterProject');
+  const fm = document.getElementById('filterMonth');
+  const br = document.getElementById('btnReset');
+  if(fp) fp.addEventListener('change', e => { activeProject = e.target.value; refreshAll(); });
+  if(fm) fm.addEventListener('change', e => { activeMonth = e.target.value; refreshAll(); });
+  document.querySelectorAll('.filter-chip[data-type]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const t = chip.dataset.type;
+      if(activeTypes.has(t)){ activeTypes.delete(t); chip.classList.remove('active'); }
+      else                   { activeTypes.add(t);    chip.classList.add('active');    }
+      refreshAll();
+    });
+  });
+  if(br) br.addEventListener('click', () => {
+    activeProject = 'all'; activeMonth = 'all';
+    activeTypes   = new Set(['ZP','ZV','ZC','ZM','ZQ','ZR']);
+    if(fp) fp.value = 'all';
+    if(fm) fm.value = 'all';
+    document.querySelectorAll('.filter-chip[data-type]').forEach(c=>c.classList.add('active'));
     refreshAll();
   });
-});
-document.getElementById('btnReset').addEventListener('click', () => {
-  activeProject = 'all'; activeMonth = 'all';
-  activeTypes   = new Set(['ZP','ZV','ZC','ZM','ZQ','ZR']);
-  document.getElementById('filterProject').value = 'all';
-  document.getElementById('filterMonth').value   = 'all';
-  document.querySelectorAll('.filter-chip[data-type]').forEach(c=>c.classList.add('active'));
-  refreshAll();
-});
+} catch(e){ console.warn('filter bind failed', e); }
 
 /* ── Animate overview KPIs on load ──────────────────── */
 animateKPIs();
@@ -2387,40 +3311,93 @@ let rawRows = [];        // parsed rows as objects {colName: value}
 let rawHeaders = [];     // column headers from file
 let colMapping = {};     // key -> headerName
 
-/* ── Mode toggle ──────────────────────────────────── */
-document.getElementById('umodeFile').addEventListener('click', () => {
-  document.getElementById('umodeFile').classList.add('active');
-  document.getElementById('umodePaste').classList.remove('active');
-  document.getElementById('fileSection').style.display = 'block';
-  document.getElementById('pasteSection').style.display = 'none';
-});
-document.getElementById('umodePaste').addEventListener('click', () => {
-  document.getElementById('umodePaste').classList.add('active');
-  document.getElementById('umodeFile').classList.remove('active');
-  document.getElementById('pasteSection').style.display = 'block';
-  document.getElementById('fileSection').style.display = 'none';
-});
+/* ── showStatus (early – used by upload + live) ───── */
+function showStatus(type, msg){
+  const el = document.getElementById('uploadStatus');
+  if(!el){ try{ console.log(type, msg); }catch(e){} return; }
+  el.className = 'upload-status ' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 
-/* ── Drag & Drop ──────────────────────────────────── */
-const dropZone  = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+/* ── Mode toggle + one-time file / paste handlers ─── */
+window.openOneTimeFilePicker = function(e){
+  if(e){ try{ e.preventDefault(); e.stopPropagation(); }catch(err){} }
+  const fi = document.getElementById('fileInput');
+  if(!fi){ alert('שגיאה: רכיב בחירת קובץ לא נמצא'); return; }
+  fi.value = '';
+  fi.click();
+};
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if(file) processFile(file);
-});
-fileInput.addEventListener('change', () => { if(fileInput.files[0]) processFile(fileInput.files[0]); });
+(function bindOneTimeUploadUI(){
+  try {
+    const umodeFile  = document.getElementById('umodeFile');
+    const umodePaste = document.getElementById('umodePaste');
+    const fileSection = document.getElementById('fileSection');
+    const pasteSection = document.getElementById('pasteSection');
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const btnParse  = document.getElementById('btnParse');
+    const btnAlt    = document.getElementById('btnPickOneTimeAlt');
 
-/* ── Paste button ─────────────────────────────────── */
-document.getElementById('btnParse').addEventListener('click', () => {
-  const txt = document.getElementById('pasteArea').value.trim();
-  if(!txt){ showStatus('err','אנא הדבק נתונים לפני הניתוח.'); return; }
-  parseDelimited(txt);
-});
+    function showFileMode(){
+      if(umodeFile) umodeFile.classList.add('active');
+      if(umodePaste) umodePaste.classList.remove('active');
+      if(fileSection) fileSection.style.display = 'block';
+      if(pasteSection) pasteSection.style.display = 'none';
+    }
+    function showPasteMode(){
+      if(umodePaste) umodePaste.classList.add('active');
+      if(umodeFile) umodeFile.classList.remove('active');
+      if(pasteSection) pasteSection.style.display = 'block';
+      if(fileSection) fileSection.style.display = 'none';
+      const pa = document.getElementById('pasteArea');
+      if(pa) setTimeout(function(){ pa.focus(); }, 50);
+    }
+
+    if(umodeFile) umodeFile.addEventListener('click', function(e){ e.preventDefault(); showFileMode(); });
+    if(umodePaste) umodePaste.addEventListener('click', function(e){ e.preventDefault(); showPasteMode(); });
+    if(btnAlt) btnAlt.addEventListener('click', window.openOneTimeFilePicker);
+
+    // Label[for=fileInput] opens the dialog natively – no JS needed.
+    // Drop-zone click (except on the label) also opens picker.
+    if(dropZone){
+      dropZone.addEventListener('click', function(e){
+        const t = e.target;
+        if(t && (t.id==='btnPickOneTime' || t.closest && t.closest('#btnPickOneTime'))) return;
+        if(t && (t.id==='fileInput' || t.tagName==='INPUT')) return;
+        window.openOneTimeFilePicker(e);
+      });
+      dropZone.addEventListener('dragover',  function(e){ e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('dragover'); });
+      dropZone.addEventListener('drop', function(e){
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if(file) processFile(file);
+      });
+    }
+    if(fileInput){
+      fileInput.addEventListener('change', function(){
+        if(fileInput.files && fileInput.files[0]){
+          processFile(fileInput.files[0]);
+        }
+        // delay clear so change can finish
+        setTimeout(function(){ fileInput.value = ''; }, 0);
+      });
+    }
+    if(btnParse){
+      btnParse.addEventListener('click', function(e){
+        e.preventDefault();
+        const pa = document.getElementById('pasteArea');
+        const txt = pa ? pa.value.trim() : '';
+        if(!txt){ showStatus('err','אנא הדבק נתונים לפני הניתוח.'); return; }
+        parseDelimited(txt, 'הדבקה');
+      });
+    }
+  } catch(err){
+    console.error('bindOneTimeUploadUI failed', err);
+  }
+})();
 
 /* ── File processor ───────────────────────────────── */
 function processFile(file){
@@ -2430,14 +3407,14 @@ function processFile(file){
   if(ext === 'xlsx' || ext === 'xls'){
     reader.onload = e => {
       try {
-        const wb = XLSX.read(e.target.result, { type:'array' });
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+        const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
         if(json.length < 2){ showStatus('err','הקובץ ריק או חסרות שורות נתונים.'); return; }
         const headers = json[0].map(h => String(h).trim());
         const rows = json.slice(1).filter(r => r.some(c => String(c).trim())).map(r => {
           const obj = {};
-          headers.forEach((h,i) => obj[h] = String(r[i]??'').trim());
+          headers.forEach((h,i) => obj[h] = r[i]==null ? '' : r[i]);
           return obj;
         });
         onDataReady(headers, rows, file.name);
@@ -2449,6 +3426,17 @@ function processFile(file){
     reader.readAsText(file, 'UTF-8');
   }
 }
+
+window.handleOneTimeFileChange = function(inputEl){
+  try {
+    const file = inputEl && inputEl.files && inputEl.files[0];
+    if(!file) return;
+    processFile(file);
+    setTimeout(function(){ try{ inputEl.value=''; }catch(e){} }, 100);
+  } catch(err){
+    showStatus('err', 'שגיאה בטעינת הקובץ: '+(err.message||err));
+  }
+};
 
 /* ── CSV / Tab-delimited parser ───────────────────── */
 function parseDelimited(text, sourceName){
@@ -2534,14 +3522,20 @@ function buildMappingUI(headers){
 }
 
 function updateMappingStatus(){
+  const critical = ['notifNum','type','material'];
+  const missingCrit = critical.filter(k => !colMapping[k]).map(k => (FRACAS_FIELDS.find(f=>f.key===k)||{}).label || k);
   const missing = FRACAS_FIELDS.filter(f => f.required && !colMapping[f.key]).map(f=>f.label);
   const el = document.getElementById('mappingStatus');
-  if(missing.length){
-    el.innerHTML = `<span style="color:#ffa657;">⚠ שדות חובה חסרים: ${missing.slice(0,3).join(', ')}${missing.length>3?'…':''}</span>`;
-    document.getElementById('btnRun').disabled = true;
+  const btn = document.getElementById('btnRun');
+  if(!el) return;
+  if(missingCrit.length){
+    el.innerHTML = `<span style="color:#ffa657;">⚠ חסרים שדות קריטיים: ${missingCrit.join(', ')}</span>`;
+    if(btn) btn.disabled = true;
   } else {
-    el.innerHTML = `<span style="color:#7ee787;">✅ כל שדות החובה ממופים</span>`;
-    document.getElementById('btnRun').disabled = false;
+    el.innerHTML = missing.length
+      ? `<span style="color:#7ee787;">✅ ניתן להפעיל</span> <span style="color:#ffa657;">· שדות משניים חסרים: ${missing.slice(0,3).join(', ')}${missing.length>3?'…':''}</span>`
+      : `<span style="color:#7ee787;">✅ כל שדות החובה ממופים</span>`;
+    if(btn) btn.disabled = false;
   }
 }
 
@@ -2567,15 +3561,28 @@ function onDataReady(headers, rows, sourceName){
 
   const matchedCount = Object.values(colMapping).filter(v=>v).length;
   const reqMissing   = FRACAS_FIELDS.filter(f=>f.required && !colMapping[f.key]).length;
+  const canApply = !!(colMapping.notifNum && colMapping.type && colMapping.material);
 
   showStatus('ok',
     `✅ נטען: "${sourceName}" · ${rows.length} שורות · ${headers.length} עמודות · ${matchedCount}/${FRACAS_FIELDS.length} שדות זוהו אוטומטית` +
-    (reqMissing ? ` · ⚠ ${reqMissing} שדות חובה לא זוהו – ודא מיפוי ידני` : '')
+    (reqMissing ? ` · ⚠ ${reqMissing} שדות משניים לא זוהו` : '')
   );
 
   showPreview(headers, rows);
   buildMappingUI(headers);
-  document.getElementById('mappingSection').style.display = 'block';
+  const mapSec = document.getElementById('mappingSection');
+  if(mapSec) mapSec.style.display = 'block';
+
+  // Auto-apply one-time / paste data when critical fields exist
+  if(canApply){
+    try {
+      const converted = convertToFracas(rows);
+      applyConvertedData(converted, sourceName || 'העלאה חד-פעמית', { silent:false, navigateCharts:false });
+      showStatus('ok', `✅ "${sourceName}" הוחל על הדשבורד (${converted.length} שורות). ניתן לתקן מיפוי וללחוץ "הפעל ניתוח" מחדש.`);
+    } catch(err){
+      showStatus('warn', 'הנתונים נטענו אך ההחלה האוטומטית נכשלה: '+err.message+' — לחץ "הפעל ניתוח" ידנית.');
+    }
+  }
 }
 
 /* ── Convert to FRACAS records ────────────────────── */
@@ -2617,15 +3624,12 @@ function convertToFracas(rows){
     return 'מפעל – ייצור';
   }
 
-  /* Parse date → month index 0-11 */
+  /* Parse date → month index 0-11 (לחישוב מגמות בגרפים בלבד) */
   function parseMonth(v){
-    if(!v) return 0;
-    const s = String(v);
-    const d = new Date(s);
-    if(!isNaN(d)) return d.getMonth();
-    // try dd/mm/yyyy
-    const m = s.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
-    if(m) return parseInt(m[2])-1;
+    const formatted = formatFracasDate(v);
+    if(!formatted) return 0;
+    const m = formatted.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if(m) return parseInt(m[2],10)-1;
     return 0;
   }
 
@@ -2633,55 +3637,547 @@ function convertToFracas(rows){
     const type     = normType(g(row,'type'));
     const supplier = g(row,'supplier');
     const rcaText  = g(row,'rootCause') || g(row,'notifText') || g(row,'defectDesc');
-    const status   = (g(row,'status')||'').includes('ס') ? 'סגור' : 'פתוח';
+    const statusRaw = g(row,'status')||'';
+    const status   = /פתוח|open/i.test(statusRaw) ? 'פתוח' : 'סגור';
+    const openDate = formatFracasDate(g(row,'openDate'));
     return {
       id:        g(row,'notifNum') || (100000001+i),
+      date:      openDate,
       project:   g(row,'project')  || 'לא ידוע',
       type,
-      supplier:  (type==='ZV' || supplier) ? (supplier||null) : null,
+      supplier:  (type==='ZV' || (supplier && supplier!=='ללא ספק')) ? (supplier||null) : null,
       material:  g(row,'material') || '***',
       dept:      g(row,'dept')     || '***',
       discovery: normDisc(g(row,'discovery')),
       rca:       inferRca(rcaText),
-      month:     parseMonth(g(row,'openDate')),
+      month:     parseMonth(openDate),
       status,
+      defectCode:g(row,'defectCode') || g(row,'defectDesc') || '',
+      notifText: g(row,'notifText')  || g(row,'defectDesc') || '',
+      rootCause: g(row,'rootCause')  || '',
+      suppFault: g(row,'suppFault')  || '',
+      longAction:g(row,'actionLong') || g(row,'action') || '',
       _raw:      row
     };
   });
 }
 
-/* ── Run Analysis ─────────────────────────────────── */
+/* ── Apply converted records into live DEMO ───────── */
+function applyConvertedData(converted, sourceName, opts){
+  opts = opts || {};
+  if(!converted || !converted.length){
+    if(!opts.silent) showStatus('err','לא נמצאו שורות נתונים תקינות.');
+    return false;
+  }
+
+  DEMO.length = 0;
+  converted.forEach(r => DEMO.push(r));
+  try { if(typeof window !== 'undefined') window.__fracasResetDedup && window.__fracasResetDedup(); } catch(e){}
+
+  const badge = document.getElementById('dataSourceBadge');
+  if(badge){
+    badge.className = 'data-source-badge live';
+    badge.textContent = `🔗 ${sourceName||'מקור חי'} (${converted.length} שורות)`;
+  }
+
+  if(!opts.silent){
+    showStatus('ok', `✅ נטענו ${converted.length} תקלות מ-"${sourceName||'מקור'}". הנתונים פעילים בכל לשוניות הדשבורד.`);
+  }
+
+  chartsInit = false;
+  try {
+    if(typeof cPareto!=='undefined' && cPareto)   { cPareto.destroy();   cPareto=null; }
+    if(typeof cSupplier!=='undefined' && cSupplier) { cSupplier.destroy(); cSupplier=null; }
+    if(typeof cType!=='undefined' && cType)     { cType.destroy();     cType=null; }
+    if(typeof cRca!=='undefined' && cRca)      { cRca.destroy();      cRca=null; }
+    if(typeof cTrends!=='undefined' && cTrends)   { cTrends.destroy();   cTrends=null; }
+    if(typeof cDisc!=='undefined' && cDisc)     { cDisc.destroy();     cDisc=null; }
+  } catch(e){}
+
+  if(opts.navigateCharts){
+    setTimeout(() => {
+      const chartsBtn = document.querySelector('.nav-btn[data-tab="charts"]');
+      if(chartsBtn) chartsBtn.click();
+    }, 400);
+  } else if(typeof refreshAll === 'function'){
+    try { refreshAll(); } catch(e){}
+  }
+  try { if(typeof renderDataGrid === 'function') renderDataGrid(); } catch(e){}
+  return true;
+}
+
+/* ── Run Analysis (manual upload path) ────────────── */
 document.getElementById('btnRun').addEventListener('click', () => {
   try {
     const converted = convertToFracas(rawRows);
-    if(!converted.length){ showStatus('err','לא נמצאו שורות נתונים תקינות.'); return; }
-
-    // Replace DEMO data – push into global DEMO array
-    DEMO.length = 0;
-    converted.forEach(r => DEMO.push(r));
-
-    // Update data source badge everywhere
-    document.getElementById('dataSourceBadge').className = 'data-source-badge';
-    document.getElementById('dataSourceBadge').textContent = `📊 נתונים אמיתיים (${converted.length} שורות)`;
-
-    showStatus('ok', `✅ ניתוח הופעל בהצלחה עם ${converted.length} תקלות. עבור ללשונית "📊 ניתוח גרפי" לצפייה.`);
-
-    // Force charts to re-render with new data
-    chartsInit = false;
-    if(cPareto)   { cPareto.destroy();   cPareto=null; }
-    if(cSupplier) { cSupplier.destroy(); cSupplier=null; }
-    if(cType)     { cType.destroy();     cType=null; }
-    if(cRca)      { cRca.destroy();      cRca=null; }
-    if(cTrends)   { cTrends.destroy();   cTrends=null; }
-    if(cDisc)     { cDisc.destroy();     cDisc=null; }
-
-    // Navigate to charts tab
-    setTimeout(() => {
-      document.querySelector('[data-tab="charts"]').click();
-    }, 600);
-
-  } catch(err){ showStatus('err','שגיאה בהמרת הנתונים: '+err.message); }
+    applyConvertedData(converted, 'העלאה ידנית', { navigateCharts: true });
+  } catch(err){
+    showStatus('err','שגיאה בהמרת הנתונים: '+err.message);
+  }
 });
+
+/* ════════════════════════════════════════════════════
+   LIVE SHARED DATA SOURCE (Excel/CSV auto-connect)
+   + בחירת קובץ בסיס נתונים עם שמירה ב-IndexedDB
+   ════════════════════════════════════════════════════ */
+const LIVE_DEFAULTS = {
+  dataUrl: 'AI_unclassified.xlsx',
+  refreshHours: 6,
+  autoApply: true,
+  label: 'קובץ נתונים משותף',
+  preferPickedFile: true
+};
+
+let liveConfig = Object.assign({}, LIVE_DEFAULTS);
+let liveRefreshTimer = null;
+let liveLastEtag = null;
+let liveLastModified = null;
+let liveConnecting = false;
+const LIVE_DB_NAME = 'fracasLiveDb';
+const LIVE_STORE = 'files';
+const LIVE_KEY = 'current';
+
+/** Normalize refresh interval to whole hours 0–24 (legacy refreshMinutes supported). */
+function normalizeRefreshHours(cfg){
+  cfg = cfg || {};
+  let h;
+  if(cfg.refreshHours != null && cfg.refreshHours !== ''){
+    h = Number(cfg.refreshHours);
+  } else if(cfg.refreshMinutes != null && cfg.refreshMinutes !== ''){
+    h = Number(cfg.refreshMinutes) / 60;
+  } else {
+    h = LIVE_DEFAULTS.refreshHours;
+  }
+  if(!isFinite(h) || h < 0) h = 0;
+  h = Math.round(h);
+  if(h > 24) h = 24;
+  return h;
+}
+
+function readRefreshHoursFromUi(){
+  const inp = document.getElementById('liveRefreshHours');
+  if(!inp) return normalizeRefreshHours(liveConfig);
+  let h = Number(inp.value);
+  if(!isFinite(h) || h < 0) h = 0;
+  h = Math.round(h);
+  if(h > 24) h = 24;
+  inp.value = h;
+  return h;
+}
+
+function setLiveUi(state, msg){
+  const dot = document.getElementById('liveDot');
+  const txt = document.getElementById('liveStatusText');
+  if(dot){
+    dot.className = 'live-dot ' + (state==='ok'?'ok':state==='loading'?'loading':state==='err'?'err':'off');
+  }
+  if(txt) txt.textContent = msg || '—';
+}
+
+function updateLiveMeta(fileName, rows){
+  const fn = document.getElementById('liveFileName');
+  const rc = document.getElementById('liveRowCount');
+  const lr = document.getElementById('liveLastRefresh');
+  const ri = document.getElementById('liveRefreshInfo');
+  if(fn) fn.textContent = fileName || liveConfig.dataUrl || '—';
+  if(rc) rc.textContent = (rows!=null ? rows : '—');
+  if(lr) lr.textContent = new Date().toLocaleString('he-IL');
+  if(ri){
+    const h = normalizeRefreshHours(liveConfig);
+    if(h<=0) ri.textContent = 'כבוי';
+    else if(h===1) ri.textContent = 'כל שעה';
+    else ri.textContent = 'כל ' + h + ' שעות';
+  }
+}
+
+function saveLiveSettingsLocal(){
+  try {
+    localStorage.setItem('fracasLiveConfig', JSON.stringify({
+      dataUrl: liveConfig.dataUrl,
+      refreshHours: normalizeRefreshHours(liveConfig),
+      autoApply: liveConfig.autoApply,
+      label: liveConfig.label,
+      preferPickedFile: liveConfig.preferPickedFile !== false,
+      pickedFileName: liveConfig.pickedFileName || null
+    }));
+  } catch(e){}
+}
+
+function loadLiveSettingsLocal(){
+  try {
+    const raw = localStorage.getItem('fracasLiveConfig');
+    if(!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){ return null; }
+}
+
+function openLiveIdb(){
+  return new Promise(function(resolve, reject){
+    if(!window.indexedDB){ reject(new Error('IndexedDB לא נתמך')); return; }
+    const req = indexedDB.open(LIVE_DB_NAME, 1);
+    req.onupgradeneeded = function(){
+      const db = req.result;
+      if(!db.objectStoreNames.contains(LIVE_STORE)) db.createObjectStore(LIVE_STORE);
+    };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error || new Error('IDB open failed')); };
+  });
+}
+
+async function savePickedDbFile(file){
+  const buf = await file.arrayBuffer();
+  const db = await openLiveIdb();
+  return new Promise(function(resolve, reject){
+    const tx = db.transaction(LIVE_STORE, 'readwrite');
+    tx.objectStore(LIVE_STORE).put({
+      name: file.name,
+      type: file.type || '',
+      size: file.size,
+      savedAt: Date.now(),
+      buffer: buf
+    }, LIVE_KEY);
+    tx.oncomplete = function(){ db.close(); resolve(true); };
+    tx.onerror = function(){ db.close(); reject(tx.error); };
+  });
+}
+
+async function loadPickedDbFile(){
+  try {
+    const db = await openLiveIdb();
+    return await new Promise(function(resolve, reject){
+      const tx = db.transaction(LIVE_STORE, 'readonly');
+      const req = tx.objectStore(LIVE_STORE).get(LIVE_KEY);
+      req.onsuccess = function(){ db.close(); resolve(req.result || null); };
+      req.onerror = function(){ db.close(); reject(req.error); };
+    });
+  } catch(e){ return null; }
+}
+
+async function clearPickedDbFile(){
+  try {
+    const db = await openLiveIdb();
+    await new Promise(function(resolve, reject){
+      const tx = db.transaction(LIVE_STORE, 'readwrite');
+      tx.objectStore(LIVE_STORE).delete(LIVE_KEY);
+      tx.oncomplete = function(){ db.close(); resolve(true); };
+      tx.onerror = function(){ db.close(); reject(tx.error); };
+    });
+  } catch(e){}
+  liveConfig.pickedFileName = null;
+  liveConfig.preferPickedFile = false;
+  saveLiveSettingsLocal();
+}
+
+async function loadLiveConfig(){
+  const params = new URLSearchParams(location.search);
+  const fromUrl = params.get('data');
+  const fromLocal = loadLiveSettingsLocal();
+
+  liveConfig = Object.assign({}, LIVE_DEFAULTS);
+  try {
+    const res = await fetch('fracas-config.json', { cache: 'no-store' });
+    if(res.ok){
+      const cfg = await res.json();
+      liveConfig = Object.assign(liveConfig, cfg);
+    }
+  } catch(e){}
+
+  if(fromLocal) liveConfig = Object.assign(liveConfig, fromLocal);
+  if(fromUrl) liveConfig.dataUrl = fromUrl;
+  liveConfig.refreshHours = normalizeRefreshHours(liveConfig);
+  delete liveConfig.refreshMinutes;
+
+  const urlInput = document.getElementById('liveDataUrl');
+  const hoursInput = document.getElementById('liveRefreshHours');
+  if(urlInput) urlInput.value = liveConfig.dataUrl || '';
+  if(hoursInput) hoursInput.value = liveConfig.refreshHours;
+  updateLiveMeta(liveConfig.pickedFileName || liveConfig.dataUrl, null);
+}
+
+function scheduleLiveRefresh(){
+  if(liveRefreshTimer){ clearInterval(liveRefreshTimer); liveRefreshTimer=null; }
+  const hours = normalizeRefreshHours(liveConfig);
+  liveConfig.refreshHours = hours;
+  updateLiveMeta(liveConfig.pickedFileName || liveConfig.dataUrl, document.getElementById('liveRowCount')?.textContent);
+  if(hours<=0) return;
+  liveRefreshTimer = setInterval(function(){ connectLiveData({ quiet:true }); }, hours * 60 * 60 * 1000);
+}
+
+function parseWorkbookArrayBuffer(buf, sourceName){
+  const wb = XLSX.read(buf, { type:'array', cellDates:true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+  if(json.length < 2) throw new Error('הקובץ ריק או חסרות שורות נתונים.');
+  const headers = json[0].map(function(h){ return String(h).trim(); });
+  const rows = json.slice(1).filter(function(r){ return r.some(function(c){ return String(c).trim(); }); }).map(function(r){
+    const obj = {};
+    headers.forEach(function(h,i){ obj[h] = r[i]==null ? '' : r[i]; });
+    return obj;
+  });
+  return { headers: headers, rows: rows, sourceName: sourceName };
+}
+
+function parseTextPayload(text, sourceName){
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(function(l){ return l.trim(); });
+  if(lines.length < 2) throw new Error('הקובץ צריך לפחות שורת כותרת ושורת נתונים.');
+  const sample = lines[0];
+  const tabCount  = (sample.match(/\t/g)||[]).length;
+  const commaCount= (sample.match(/,/g)||[]).length;
+  const semi      = (sample.match(/;/g)||[]).length;
+  const delim = tabCount >= commaCount && tabCount >= semi ? '\t' : commaCount >= semi ? ',' : ';';
+  function splitLine(line){
+    if(delim !== ',') return line.split(delim).map(function(v){ return v.trim().replace(/^["']|["']$/g,''); });
+    const result=[]; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      if(line[i]==='"'){ inQ=!inQ; }
+      else if(line[i]===',' && !inQ){ result.push(cur.trim()); cur=''; }
+      else cur+=line[i];
+    }
+    result.push(cur.trim());
+    return result;
+  }
+  const headers = splitLine(lines[0]);
+  const rows = lines.slice(1).map(function(l){
+    const vals = splitLine(l);
+    const obj  = {};
+    headers.forEach(function(h,i){ obj[h] = (vals[i]||'').trim(); });
+    return obj;
+  }).filter(function(r){ return Object.values(r).some(function(v){ return v; }); });
+  return { headers: headers, rows: rows, sourceName: sourceName };
+}
+
+function applyParsedLiveData(parsed, opts){
+  opts = opts || {};
+  rawHeaders = parsed.headers;
+  rawRows = parsed.rows;
+  colMapping = autoMatch(parsed.headers);
+
+  if(liveConfig.autoApply !== false){
+    const converted = convertToFracas(parsed.rows);
+    applyConvertedData(converted, parsed.sourceName, { silent: !!opts.quiet, navigateCharts: false });
+    updateLiveMeta(parsed.sourceName, converted.length);
+    setLiveUi('ok', 'מחובר · '+converted.length+' שורות · עודכן '+new Date().toLocaleTimeString('he-IL'));
+    if(!opts.quiet){
+      showStatus('ok', '🔗 מקור בסיס נתונים פעיל: "'+parsed.sourceName+'" ('+converted.length+' שורות).');
+    }
+    return converted.length;
+  }
+  onDataReady(parsed.headers, parsed.rows, parsed.sourceName);
+  updateLiveMeta(parsed.sourceName, parsed.rows.length);
+  setLiveUi('ok', 'נטען · ממתין לאישור מיפוי');
+  return parsed.rows.length;
+}
+
+async function applyPickedFileRecord(rec, opts){
+  opts = opts || {};
+  if(!rec || !rec.buffer) return false;
+  const name = rec.name || 'קובץ נבחר';
+  const lower = name.toLowerCase();
+  let parsed;
+  if(lower.endsWith('.xlsx') || lower.endsWith('.xls')){
+    parsed = parseWorkbookArrayBuffer(rec.buffer, name);
+  } else {
+    const text = new TextDecoder('utf-8').decode(rec.buffer);
+    parsed = parseTextPayload(text, name);
+  }
+  applyParsedLiveData(parsed, opts);
+  return true;
+}
+
+async function chooseLiveDbFile(file){
+  if(!file) return;
+  setLiveUi('loading', 'טוען קובץ שנבחר…');
+  try {
+    await savePickedDbFile(file);
+    liveConfig.pickedFileName = file.name;
+    liveConfig.dataUrl = file.name;
+    liveConfig.preferPickedFile = true;
+    const urlInput = document.getElementById('liveDataUrl');
+    if(urlInput) urlInput.value = file.name;
+    saveLiveSettingsLocal();
+
+    const lower = file.name.toLowerCase();
+    let parsed;
+    if(lower.endsWith('.xlsx') || lower.endsWith('.xls')){
+      const buf = await file.arrayBuffer();
+      parsed = parseWorkbookArrayBuffer(buf, file.name);
+    } else {
+      const text = await file.text();
+      parsed = parseTextPayload(text, file.name);
+    }
+    applyParsedLiveData(parsed, { quiet:false });
+    scheduleLiveRefresh();
+    showStatus('ok', '📂 קובץ בסיס הנתונים נבחר ונשמר: "'+file.name+'". ייטען אוטומטית בפתיחות הבאות.');
+  } catch(err){
+    setLiveUi('err', err.message || 'שגיאה בבחירת קובץ');
+    showStatus('err', 'שגיאה בטעינת הקובץ שנבחר: '+err.message);
+  }
+}
+
+async function connectLiveData(opts){
+  opts = opts || {};
+  if(liveConnecting) return;
+  liveConnecting = true;
+
+  const urlInput = document.getElementById('liveDataUrl');
+  if(urlInput && urlInput.value.trim()) liveConfig.dataUrl = urlInput.value.trim();
+  liveConfig.refreshHours = readRefreshHoursFromUi();
+
+  setLiveUi('loading', opts.quiet ? 'מרענן…' : 'מתחבר לקובץ…');
+
+  try {
+    // 1) Prefer previously picked file (works also on file://)
+    if(liveConfig.preferPickedFile !== false){
+      const picked = await loadPickedDbFile();
+      if(picked){
+        await applyPickedFileRecord(picked, opts);
+        // Also try network refresh if HTTP available and same filename exists
+        if(location.protocol !== 'file:' && liveConfig.dataUrl){
+          try {
+            const res = await fetch(liveConfig.dataUrl, { cache: 'no-store' });
+            if(res.ok){
+              const etag = res.headers.get('etag');
+              const lm = res.headers.get('last-modified');
+              const unchanged = opts.quiet && ((etag && etag === liveLastEtag) || (lm && lm === liveLastModified));
+              if(!unchanged){
+                liveLastEtag = etag;
+                liveLastModified = lm;
+                const name = liveConfig.dataUrl.split('/').pop().split('\\').pop();
+                const lower = name.toLowerCase();
+                let parsed, rawBuf;
+                if(lower.endsWith('.xlsx') || lower.endsWith('.xls')){
+                  rawBuf = await res.arrayBuffer();
+                  parsed = parseWorkbookArrayBuffer(rawBuf, name);
+                } else {
+                  const text = await res.text();
+                  rawBuf = new TextEncoder().encode(text).buffer;
+                  parsed = parseTextPayload(text, name);
+                }
+                applyParsedLiveData(parsed, opts);
+                try { await savePickedDbFile(new File([rawBuf], name)); } catch(e){}
+              }
+            }
+          } catch(e){ /* keep IndexedDB version */ }
+        }
+        scheduleLiveRefresh();
+        liveConnecting = false;
+        return;
+      }
+    }
+
+    const url = (liveConfig.dataUrl||'').trim();
+    if(!url){
+      setLiveUi('err','לא הוגדר נתיב / לא נבחר קובץ');
+      liveConnecting = false;
+      return;
+    }
+
+    if(location.protocol === 'file:'){
+      throw new Error('לא נמצא קובץ שנשמר. לחץ "בחר קובץ בסיס נתונים", או הפעל עם start-fracas.bat לטעינה מ-URL.');
+    }
+
+    const res = await fetch(url, { cache: 'no-store' });
+    if(!res.ok) throw new Error('לא ניתן לטעון ('+res.status+'): '+url);
+
+    const etag = res.headers.get('etag');
+    const lm = res.headers.get('last-modified');
+    if(opts.quiet && etag && liveLastEtag && etag === liveLastEtag){
+      setLiveUi('ok', 'מחובר · ללא שינוי · '+DEMO.length+' שורות');
+      liveConnecting = false;
+      return;
+    }
+    if(opts.quiet && lm && liveLastModified && lm === liveLastModified){
+      setLiveUi('ok', 'מחובר · ללא שינוי · '+DEMO.length+' שורות');
+      liveConnecting = false;
+      return;
+    }
+    liveLastEtag = etag;
+    liveLastModified = lm;
+
+    const name = url.split('/').pop().split('\\').pop();
+    const lower = name.toLowerCase();
+    let parsed;
+    let rawBuf = null;
+    if(lower.endsWith('.xlsx') || lower.endsWith('.xls')){
+      rawBuf = await res.arrayBuffer();
+      parsed = parseWorkbookArrayBuffer(rawBuf, name);
+    } else {
+      const text = await res.text();
+      rawBuf = new TextEncoder().encode(text).buffer;
+      parsed = parseTextPayload(text, name);
+    }
+
+    applyParsedLiveData(parsed, opts);
+    // Persist as chosen DB so next open works even offline/file://
+    try {
+      await savePickedDbFile(new File([rawBuf], name));
+      liveConfig.pickedFileName = name;
+      liveConfig.preferPickedFile = true;
+      saveLiveSettingsLocal();
+    } catch(e){}
+
+    scheduleLiveRefresh();
+  } catch(err){
+    // Fallback: try IndexedDB even if prefer flag was off
+    const picked = await loadPickedDbFile();
+    if(picked){
+      await applyPickedFileRecord(picked, opts);
+      setLiveUi('ok', 'נטען מהקובץ שנשמר מקומית · '+DEMO.length+' שורות');
+      if(!opts.quiet) showStatus('warn', '⚠ רענון מהרשת נכשל — נטען הקובץ האחרון שנבחר ("'+picked.name+'").');
+    } else {
+      setLiveUi('err', err.message || 'שגיאת חיבור');
+      if(!opts.quiet){
+        const badge = document.getElementById('dataSourceBadge');
+        if(badge && DEMO.length){
+          badge.className = 'data-source-badge warn';
+          badge.textContent = '⚠ דמו פעיל · חיבור נכשל';
+        }
+        showStatus('warn', '⚠ חיבור למקור הקבוע נכשל: ' + err.message + ' — מוצגים נתוני הדמו. בחר קובץ בסיס נתונים.');
+      }
+    }
+  } finally {
+    liveConnecting = false;
+  }
+}
+
+document.getElementById('btnLivePickFile')?.addEventListener('click', function(){
+  document.getElementById('liveDbFileInput')?.click();
+});
+document.getElementById('liveDbFileInput')?.addEventListener('change', function(e){
+  const file = e.target.files && e.target.files[0];
+  if(file) chooseLiveDbFile(file);
+  e.target.value = '';
+});
+document.getElementById('btnLiveConnect')?.addEventListener('click', function(){
+  saveLiveSettingsLocal();
+  connectLiveData({ quiet:false });
+});
+document.getElementById('btnLiveSave')?.addEventListener('click', function(){
+  const urlInput = document.getElementById('liveDataUrl');
+  if(urlInput) liveConfig.dataUrl = urlInput.value.trim();
+  liveConfig.refreshHours = readRefreshHoursFromUi();
+  saveLiveSettingsLocal();
+  scheduleLiveRefresh();
+  showStatus('ok', '💾 הגדרות המקור הקבוע נשמרו בדפדפן זה.');
+});
+document.getElementById('btnLiveClearDb')?.addEventListener('click', async function(){
+  await clearPickedDbFile();
+  updateLiveMeta(liveConfig.dataUrl, null);
+  setLiveUi('off', 'הבחירה נוקתה · ניתן לבחור קובץ חדש');
+  showStatus('info', '🗑 בחירת קובץ בסיס הנתונים נוקתה. נתוני הדמו יישארו עד לבחירה חדשה / חיבור.');
+});
+
+(async function bootLiveData(){
+  try {
+    await loadLiveConfig();
+    setTimeout(function(){
+      try { connectLiveData({ quiet:false }); }
+      catch(e){ setLiveUi('err', e.message||'שגיאת אתחול'); }
+    }, 200);
+  } catch(e){
+    setLiveUi('off', 'מקור קבוע לא אותחל — ניתן לבחור קובץ / להעלות ידנית');
+  }
+})();
 
 /* ════════════════════════════════════════════════════
    ANALYSIS WIZARD – 10 Step Runner
@@ -2782,7 +4278,7 @@ function proceedAnalysisC(){
       <div class="result-block-title">🤖 FRACAS Chat Bot – פעיל</div>
       <p style="color:#cdd5df;font-size:.9rem;">
         <strong>שלום!</strong> אני ה-FRACAS Chat Bot.<br/>
-        נטענו: <strong>${DEMO.length} הודעות</strong> | פרויקט: <strong>${[...new Set(DEMO.map(r=>r.project))].join(', ')}</strong>
+        נטענו: <strong>${analysisBase().length} הודעות</strong> | פרויקט: <strong>${[...new Set(analysisBase().map(r=>r.project))].join(', ')}</strong>
       </p>
       <div id="chatMessages" style="max-height:280px;overflow-y:auto;padding:10px;background:#0d1117;
         border-radius:8px;border:1px solid var(--border);margin:10px 0;font-size:.84rem;line-height:1.6;"></div>
@@ -2817,7 +4313,7 @@ function sendChatMsg(){
   setTimeout(()=>addChatMsg('bot',answerChatQuery(q)),300);
 }
 function answerChatQuery(q){
-  const d=dedupedData||DEMO; const ql=q.toLowerCase();
+  const d=analysisData(); const ql=q.toLowerCase();
   if(ql.includes('כמה תקלות')||ql.includes('סה"כ')||ql.includes('כמות')){
     const op=d.filter(r=>r.status==='פתוח').length;
     return `סה"כ <strong>${d.length}</strong> הודעות: <strong>${op}</strong> פתוחות ו-<strong>${d.length-op}</strong> סגורות.`;
@@ -2878,6 +4374,7 @@ const STEP_DEFS = [
 let activeStepN = null;
 let dedupedData  = null;   // result after step 2
 let wizCharts    = {};     // canvas id → Chart instance
+window.__fracasResetDedup = function(){ dedupedData = null; };
 
 /* ── Build sidebar ─────────────────────────────────── */
 function buildSidebar(){
@@ -2963,7 +4460,7 @@ function resultHeader(n, title, sub){
       <button class="export-btn word" title="שמור כ-Word" onclick="exportWord('${safeTitle}', document.getElementById('wizContent').innerHTML)">📄 Word</button>
       <button class="export-btn pdf"  title="שמור כ-PDF"  onclick="exportPDF('${safeTitle}', document.getElementById('wizContent').innerHTML)">🖨 PDF</button>
     </div>
-  </div>`;
+  </div>` + analysisScopeBanner();
 }
 
 /* ── Next step hint ─────────────────────────────────── */
@@ -2975,7 +4472,7 @@ function nextHint(n){
 
 /* ══ STEP 1 – 1.1 קבלת נתונים ואתחול ══ */
 function runStep1(){
-  const d = DEMO;
+  const d = analysisBase();
   const projects  = [...new Set(d.map(r=>r.project))];
   const types     = [...new Set(d.map(r=>r.type))].sort();
   const suppliers = [...new Set(d.filter(r=>r.supplier).map(r=>r.supplier))];
@@ -3060,7 +4557,7 @@ function runStep1(){
 
 /* ══ STEP 2 – 1.2 ניתוח סוגי הודעה ══ */
 function runStep2(){
-  const d = DEMO;
+  const d = analysisBase();
   const types = ['ZP','ZV','ZC','ZM','ZQ','ZR'];
   const TYPE_NAMES = {
     ZP:'תקלת ייצור (Production)', ZV:'תקלת ספק (Vendor)',
@@ -3152,7 +4649,7 @@ function runStep2(){
 
 /* ══ STEP 3 – 1.3 זיהוי כפולות / משורשרות ══ */
 function runStep3(){
-  const src = DEMO;
+  const src = analysisBase();
   const before = src.length;
 
   // Primary: group by base notification ID (same number = chained)
@@ -3243,7 +4740,7 @@ function showStep4Choice(){
 }
 
 function runStep4(groupBy){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const labels = { project:'פרויקט', supplier:'ספק', dept:'מחלקה', none:'(ללא קיבוץ)' };
 
   if(groupBy==='none'){
@@ -3374,7 +4871,7 @@ function classifyAction(text){
 
 /* ══ STEP 5 – 1.5 פעילות מתקנת שבוצעה ══ */
 function runStep5(){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const total = d.length;
   const closed = d.filter(r=>r.status==='סגור');
   const open   = d.filter(r=>r.status==='פתוח');
@@ -3619,7 +5116,7 @@ function runStep5(){
 
 /* ══ STEP 6 – 1.6 סיווג קטגוריות בעיות (19 קטגוריות AS9100) ══ */
 function runStep6(){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const classified = d.map(r=>({...r, cat:classifyAS9100(r)}));
   const catCnt={};
   classified.forEach(r=>{catCnt[r.cat]=(catCnt[r.cat]||0)+1;});
@@ -3677,7 +5174,7 @@ function runStep6(){
 
 /* ══ STEP 7 – 1.7 ניתוח סיבות שורש (RCA / 5M) ══ */
 function runStep7(){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const cats = ['Man','Machine','Material','Method','Measurement','Design','Unknown'];
   const CAT_HE = {Man:'גורם אנוש',Machine:'ציוד/כלים',Material:'חומר',
     Method:'תהליך/שיטה',Measurement:'מדידה',Design:'תכן/הנדסה',Unknown:'לא ידוע'};
@@ -3752,7 +5249,7 @@ function runStep7(){
 
 /* ══ STEP 8 – 1.8 הצעות CAPA ══ */
 function runStep8(){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const catCnt = {};
   d.forEach(r=>{ const c=r.rca||'Unknown'; catCnt[c]=(catCnt[c]||0)+1; });
   const topCats = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -4001,7 +5498,7 @@ function buildReportG(d){
 /* Called by row-click or dropdown */
 function selectNCRRecord(idx){
   if(idx === '' || idx === undefined || idx === null) return;
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const r = d[+idx];
   if(!r) return;
 
@@ -4014,14 +5511,23 @@ function selectNCRRecord(idx){
   const sel = document.getElementById('ncrSelect');
   if(sel && sel.value !== String(idx)) sel.value = String(idx);
 
-  /* Render 8D form */
+  /* Render 8D form only (export targets #ncrFormPrint — without picker table) */
   const container = document.getElementById('ncrFormContainer');
   if(!container) return;
+  const safeTitle = ('NCR '+r.id+' – '+(r.material||'').slice(0,30)).replace(/'/g, "\\'");
   container.innerHTML =
-    `<div style="margin:10px 0 6px;">` +
-    resultHeader('NCR',`NCR ${r.id} – ${(r.material||'').slice(0,30)}`,`8D Format | ${r.type} | ${r.status}`) +
-    `</div>` +
-    renderNCR8D(r);
+    `<div id="ncrFormPrint">` +
+    `<div class="result-header">
+      <div class="result-step-num">NCR</div>
+      <div style="flex:1"><div class="result-title">NCR ${r.id} – ${(r.material||'').slice(0,30)}</div>
+      <div class="result-sub">8D Format | ${r.type} | ${r.status}</div></div>
+      <div class="export-bar" style="margin-bottom:0;margin-right:auto;">
+        <button class="export-btn word" title="שמור טופס NCR בלבד" onclick="exportWord('${safeTitle}', document.getElementById('ncrFormPrint').innerHTML)">📄 Word</button>
+        <button class="export-btn pdf"  title="הדפס טופס NCR בלבד"  onclick="exportPDF('${safeTitle}', document.getElementById('ncrFormPrint').innerHTML)">🖨 PDF</button>
+      </div>
+    </div>` +
+    renderNCR8D(r) +
+    `</div>`;
 
   /* Scroll to form */
   setTimeout(()=>container.scrollIntoView({behavior:'smooth',block:'start'}), 80);
@@ -4057,7 +5563,7 @@ function showStep9Choice(){
 }
 
 function runStep9(type){
-  const d=dedupedData||DEMO, sample=d[0]||{};
+  const d=analysisData(), sample=d[0]||{};
   const zvData=d.filter(r=>r.type==='ZV'), zmData=d.filter(r=>r.type==='ZM');
   const today=new Date().toLocaleDateString('he-IL');
   const projects=[...new Set(d.map(r=>r.project))].join(', ');
@@ -4143,7 +5649,7 @@ function runStep9(type){
     'I':`<div class="result-block"><div class="result-block-title">📊 I – דשבורד מסכם (כל הניתוחים)</div>
       ${tbl(['שלב','ממצא עיקרי','המלצה'],[
         ['1.2 סוגי הודעה',`ZP:${d.filter(r=>r.type==='ZP').length}|ZV:${d.filter(r=>r.type==='ZV').length}|ZM:${d.filter(r=>r.type==='ZM').length}`,'בדיקת ZV בעדיפות'],
-        ['1.3 כפילויות',`${DEMO.length-d.length} הוסרו → ${d.length} ייחודיות`,'✅ ולידציה'],
+        ['1.3 כפילויות',`${analysisBase().length-d.length} הוסרו → ${d.length} ייחודיות`,'✅ ולידציה'],
         ['1.4 Pareto',Object.entries(matCnt).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—','CAPA ממוקד'],
         ['1.5 פעילות',`${d.filter(r=>r.status==='סגור').length} סגורות | ${d.filter(r=>r.status==='פתוח').length} פתוחות`,'סגירת פתוחות'],
         ['1.6 AS9100',(()=>{const c={};d.forEach(r=>{const cat=classifyAS9100(r);c[cat]=(c[cat]||0)+1;});return AS9100_CATS[+Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]]||'—';})(),'עיין בסיווג'],
@@ -4164,7 +5670,7 @@ function runStep9(type){
 
 /* ══ STEP 10 – 1.10 Executive Summary ══ */
 function runStep10(){
-  const d = dedupedData || DEMO;
+  const d = analysisData();
   const projects=[...new Set(d.map(r=>r.project))];
   const catCnt={}; d.forEach(r=>{catCnt[r.rca||'Unknown']=(catCnt[r.rca||'Unknown']||0)+1;});
   const topRca=Object.entries(catCnt).sort((a,b)=>b[1]-a[1])[0]||['—',0];
@@ -4193,7 +5699,7 @@ function runStep10(){
     `<div class="result-block">
       <div class="result-block-title">📊 KPIs מרכזיים</div>
       ${tbl(['KPI','ערך','הערה'],[
-        ['סה"כ לפני Dedup',DEMO.length,'כל הרשומות'],
+        ['סה"כ לפני Dedup',analysisBase().length, dgActiveFilterCount()?'בסיס מסונן':'כל הרשומות'],
         ['תקלות ייחודיות',d.length,'לאחר Dedup'],
         ['פרויקטים',projects.length,projects.join(', ')],
         ['הודעות פתוחות',open,((open/d.length)*100).toFixed(0)+'%'],
@@ -4254,7 +5760,14 @@ function updateWizDataBar(){
   const lbl = document.getElementById('wizDataLabel');
   const dot = document.getElementById('wizDot');
   if(lbl){
-    lbl.textContent = DEMO.length + ' שורות' + (dedupedData ? ` | לאחר dedup: ${dedupedData.length}` : '');
+    const full = (DEMO||[]).length;
+    const base = analysisBase();
+    const fc = dgActiveFilterCount();
+    let t = (fc && base.length !== full)
+      ? (base.length + ' מסונן מתוך ' + full)
+      : (full + ' שורות');
+    if(dedupedData) t += ' | לאחר dedup: ' + dedupedData.length;
+    lbl.textContent = t;
     const isDemo = document.getElementById('dataSourceBadge')?.textContent.includes('דמו');
     if(dot) dot.className = 'wdb-dot' + (isDemo?' demo':'');
   }
@@ -4272,12 +5785,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 // Initial build – deferred to ensure DOM is ready
 setTimeout(buildSidebar, 0);
 
-/* ── showStatus helper ────────────────────────────────────── */
-function showStatus(type, msg){
-  const el = document.getElementById('uploadStatus');
-  el.className = 'upload-status ' + type;
-  el.textContent = msg;
-}
 </script>
 
 </body>
